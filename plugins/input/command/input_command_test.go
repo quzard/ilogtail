@@ -64,6 +64,7 @@ func TestCommandTestCollecetUserBase64(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		p.CmdPath = "/bin/sh"
 	}
+	fmt.Println(runtime.GOOS)
 	p.ScriptContent = base64.StdEncoding.EncodeToString([]byte(scriptContent))
 	p.ContentEncoding = "Base64"
 	p.User = "runner"
