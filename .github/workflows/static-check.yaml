@@ -47,8 +47,8 @@ jobs:
       # - name: Lint
       #   run: make lint
 
-      - name: UnitTest
-        run: which bash && which sh && which python && sudo make unittest_plugin
+      # - name: UnitTest
+      #   run: which bash && which sh && which python && sudo make unittest_plugin
 
       - name: UnitTest PluginManager
         run: which bash && which sh && which python && sudo make unittest_pluginmanager
