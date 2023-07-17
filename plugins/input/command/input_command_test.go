@@ -33,7 +33,7 @@ func TestCommandTestCollecetUserBase64WithTimeout(t *testing.T) {
 	p.ContentEncoding = "Base64"
 	p.TimeoutMilliSeconds = 6000
 	p.ScriptType = "shell"
-	p.User = u.Username
+	p.User = "runner"
 	if _, err = p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
 		return
@@ -60,7 +60,7 @@ func TestCommandTestCollecetUserBase64(t *testing.T) {
 	p.CmdPath = "/usr/bin/sh"
 	p.ScriptContent = base64.StdEncoding.EncodeToString([]byte(scriptContent))
 	p.ContentEncoding = "Base64"
-	p.User = u.Username
+	p.User = "runner"
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
 		return
@@ -86,7 +86,7 @@ func TestCommandTestCollect(t *testing.T) {
 	p.ScriptContent = `echo "test"`
 	p.ScriptType = "shell"
 	p.ContentEncoding = "PlainText"
-	p.User = u.Username
+	p.User = "runner"
 
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
@@ -112,7 +112,7 @@ func TestCommandTestExceptionCollect(t *testing.T) {
 	p.ScriptContent = `echo "1"`
 	p.ScriptType = "shell"
 	p.ContentEncoding = "PlainText"
-	p.User = u.Username
+	p.User = "runner"
 
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
@@ -139,7 +139,7 @@ func TestCommandTestTimeoutCollect(t *testing.T) {
 	p.ScriptContent = `sleep 10`
 	p.ScriptType = "shell"
 	p.ContentEncoding = "PlainText"
-	p.User = u.Username
+	p.User = "runner"
 
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
@@ -188,7 +188,7 @@ func TestCommandTestInit(t *testing.T) {
 	if err != nil {
 		fmt.Println("expect error with wrong user root", err)
 	}
-	p.User = u.Username
+	p.User = "runner"
 
 	// test contentType
 	p.ContentEncoding = "mixin"
