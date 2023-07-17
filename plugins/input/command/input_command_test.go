@@ -14,7 +14,7 @@ import (
 	"github.com/alibaba/ilogtail/plugins/test/mock"
 )
 
-func TestCommandTestCollectUserBase64WithTimeout(t *testing.T) {
+func TestCommandTestCollecetUserBase64WithTimeout(t *testing.T) {
 	u, err := user.Current()
 	if err != nil {
 		t.Errorf("get user.Current() error %s", err)
@@ -34,7 +34,7 @@ func TestCommandTestCollectUserBase64WithTimeout(t *testing.T) {
 	p.TimeoutMilliSeconds = 6000
 	p.ScriptType = "shell"
 	p.User = u.Username
-	if _, err := p.Init(ctx); err != nil {
+	if _, err = p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
 		return
 	}
@@ -44,7 +44,7 @@ func TestCommandTestCollectUserBase64WithTimeout(t *testing.T) {
 	}
 }
 
-func TestCommandTestCollectUserBase64(t *testing.T) {
+func TestCommandTestCollecetUserBase64(t *testing.T) {
 	u, err := user.Current()
 	if err != nil {
 		t.Errorf("get user.Current() error %s", err)
