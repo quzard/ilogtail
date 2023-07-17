@@ -51,7 +51,7 @@ jobs:
         run: which bash && which sh && which python && sudo make unittest_plugin
 
       - name: UnitTest PluginManager
-        run:  make unittest_pluginmanager
+        run: which bash && which sh && which python && sudo make unittest_pluginmanager
 
   result:
     runs-on: ubuntu-latest
