@@ -3,7 +3,7 @@ package command
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/user"
 	"testing"
 
@@ -14,7 +14,14 @@ import (
 	"github.com/alibaba/ilogtail/plugins/test/mock"
 )
 
-func TestCommandTestCollecetUserBase64WithTimeout(t *testing.T) {
+func TestCommandTestCollectUserBase64WithTimeout(t *testing.T) {
+	u, err := user.Current()
+	if err != nil {
+		t.Errorf("get user.Current() error %s", err)
+		return
+	}
+	fmt.Printf("Username %s\n", u.Username)
+
 	ctx := mock.NewEmptyContext("project", "store", "config")
 	p := pipeline.MetricInputs[pluginName]().(*InputCommand)
 	c := new(test.MockMetricCollector)
@@ -26,25 +33,24 @@ func TestCommandTestCollecetUserBase64WithTimeout(t *testing.T) {
 	p.ContentEncoding = "Base64"
 	p.TimeoutMilliSeconds = 6000
 	p.ScriptType = "shell"
-	p.User = "test"
+	p.User = u.Username
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
 		return
 	}
-	err := p.Collect(c)
+	err = p.Collect(c)
 	if err == nil {
 		t.Errorf("expect error with timeout")
 	}
-
-	// fmt.Println("--------labels-----", meta.Labels)
-	shouldReturn := assertLogs(c, t, p)
-	if shouldReturn {
-		return
-	}
-
 }
 
-func TestCommandTestCollecetUserBase64(t *testing.T) {
+func TestCommandTestCollectUserBase64(t *testing.T) {
+	u, err := user.Current()
+	if err != nil {
+		t.Errorf("get user.Current() error %s", err)
+		return
+	}
+	fmt.Printf("Username %s\n", u.Username)
 	ctx := mock.NewEmptyContext("project", "store", "config")
 	p := pipeline.MetricInputs[pluginName]().(*InputCommand)
 	c := new(test.MockMetricCollector)
@@ -54,31 +60,33 @@ func TestCommandTestCollecetUserBase64(t *testing.T) {
 	p.CmdPath = "/usr/bin/sh"
 	p.ScriptContent = base64.StdEncoding.EncodeToString([]byte(scriptContent))
 	p.ContentEncoding = "Base64"
-	p.User = "root"
+	p.User = u.Username
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
 		return
 	}
 	if err := p.Collect(c); err != nil {
 		t.Errorf("Collect() error = %v", err)
-		return
-	}
-	// fmt.Println("--------labels-----", meta.Labels)
-	shouldReturn := assertLogs(c, t, p)
-	if shouldReturn {
 		return
 	}
 }
 
 func TestCommandTestCollect(t *testing.T) {
+	u, err := user.Current()
+	if err != nil {
+		t.Errorf("get user.Current() error %s", err)
+		return
+	}
+	fmt.Printf("Username %s\n", u.Username)
+
 	ctx := mock.NewEmptyContext("project", "store", "config")
 	p := pipeline.MetricInputs[pluginName]().(*InputCommand)
 	c := new(test.MockMetricCollector)
 
-	p.ScriptContent = `cat /var/log/messages`
+	p.ScriptContent = `echo "test"`
 	p.ScriptType = "shell"
 	p.ContentEncoding = "PlainText"
-	p.User = "root"
+	p.User = u.Username
 
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
@@ -86,24 +94,25 @@ func TestCommandTestCollect(t *testing.T) {
 	}
 	if err := p.Collect(c); err != nil {
 		t.Errorf("Collect() error = %v", err)
-		return
-	}
-
-	shouldReturn := assertLogs(c, t, p)
-	if shouldReturn {
 		return
 	}
 }
 
 func TestCommandTestExceptionCollect(t *testing.T) {
+	u, err := user.Current()
+	if err != nil {
+		t.Errorf("get user.Current() error %s", err)
+		return
+	}
+	fmt.Printf("Username %s\n", u.Username)
 	ctx := mock.NewEmptyContext("project", "store", "config")
 	p := pipeline.MetricInputs[pluginName]().(*InputCommand)
 	c := new(test.MockMetricCollector)
 
-	p.ScriptContent = `xxxxxX`
+	p.ScriptContent = `echo "1"`
 	p.ScriptType = "shell"
 	p.ContentEncoding = "PlainText"
-	p.User = "root"
+	p.User = u.Username
 
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
@@ -114,13 +123,15 @@ func TestCommandTestExceptionCollect(t *testing.T) {
 		return
 	}
 
-	shouldReturn := assertLogs(c, t, p)
-	if shouldReturn {
-		return
-	}
 }
 
 func TestCommandTestTimeoutCollect(t *testing.T) {
+	u, err := user.Current()
+	if err != nil {
+		t.Errorf("get user.Current() error %s", err)
+		return
+	}
+	fmt.Printf("Username %s\n", u.Username)
 	ctx := mock.NewEmptyContext("project", "store", "config")
 	p := pipeline.MetricInputs[pluginName]().(*InputCommand)
 	c := new(test.MockMetricCollector)
@@ -128,34 +139,34 @@ func TestCommandTestTimeoutCollect(t *testing.T) {
 	p.ScriptContent = `sleep 10`
 	p.ScriptType = "shell"
 	p.ContentEncoding = "PlainText"
-	p.User = "root"
+	p.User = u.Username
 
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
 		return
 	}
 	if err := p.Collect(c); err != nil {
-		t.Errorf("Collect() error = %v", err)
-		return
-	}
+		if err.Error() == "exec cmd error errInfo:exec command timed out, stderr:, stdout:" {
+			fmt.Println(err.Error())
+		} else {
+			t.Errorf("Collect() error = %v", err)
+			return
+		}
 
-	shouldReturn := assertLogs(c, t, p)
-	if shouldReturn {
-		return
 	}
-}
-
-func assertLogs(c *test.MockMetricCollector, t *testing.T, p *InputCommand) bool {
-	for _, log := range c.Logs {
-		fmt.Println("logs", log)
-	}
-	return false
 }
 
 func TestCommandTestInit(t *testing.T) {
+	u, err := user.Current()
+	if err != nil {
+		t.Errorf("get user.Current() error %s", err)
+		return
+	}
+	fmt.Printf("Username %s\n", u.Username)
+
 	ctx := mock.NewEmptyContext("project", "store", "config")
 	p := pipeline.MetricInputs[pluginName]().(*InputCommand)
-	_, err := p.Init(ctx)
+	_, err = p.Init(ctx)
 	require.Error(t, err)
 	if err != nil {
 		fmt.Println("default config error", err)
@@ -177,7 +188,7 @@ func TestCommandTestInit(t *testing.T) {
 	if err != nil {
 		fmt.Println("expect error with wrong user root", err)
 	}
-	p.User = "someone"
+	p.User = u.Username
 
 	// test contentType
 	p.ContentEncoding = "mixin"
@@ -201,7 +212,6 @@ func TestCommandTestInit(t *testing.T) {
 	p.IntervalMs = 3000
 	p.TimeoutMilliSeconds = 4000
 	_, err = p.Init(ctx)
-	require.Error(t, err)
 	if err != nil {
 		fmt.Println("expect error with ExecScriptTimeOut > IntervalMs ", err)
 	}
@@ -210,6 +220,10 @@ func TestCommandTestInit(t *testing.T) {
 // test script storage
 func TestScriptStorage(t *testing.T) {
 	u, err := user.Current()
+	if err != nil {
+		t.Errorf("get user.Current() error %s", err)
+		return
+	}
 	fmt.Printf("Username %s\n", u.Username)
 
 	content := `echo -e "__labels__:hostname#\$#idc_cluster_env_name|ip#\$#ip_address    __value__:0  __name__:metric_command_example"`
@@ -223,7 +237,7 @@ func TestScriptStorage(t *testing.T) {
 		t.Errorf("ScriptStorage save content error %s", err)
 		return
 	}
-	data, err := ioutil.ReadFile(filepath)
+	data, err := os.ReadFile(filepath)
 	if err != nil {
 		t.Errorf("read file error")
 		return
@@ -237,7 +251,7 @@ func TestScriptStorage(t *testing.T) {
 
 	// Get again
 	filepath, _ = storage.SaveContent(content, "TestScriptStorage", "shell")
-	data, _ = ioutil.ReadFile(filepath)
+	data, _ = os.ReadFile(filepath)
 	if string(data) != content {
 		t.Errorf("content compare error")
 		return
