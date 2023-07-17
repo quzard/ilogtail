@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -33,6 +34,9 @@ func TestCommandTestCollecetUserBase64WithTimeout(t *testing.T) {
 	p.ContentEncoding = "Base64"
 	p.TimeoutMilliSeconds = 6000
 	p.ScriptType = "shell"
+	if runtime.GOOS == "darwin" {
+		p.CmdPath = "/bin/sh"
+	}
 	p.User = "runner"
 	if _, err = p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
@@ -57,7 +61,9 @@ func TestCommandTestCollecetUserBase64(t *testing.T) {
 	scriptContent := `echo -e "__labels__:a#\$#1|b#\$#2    __value__:0  __name__:metric_command_example \n __labels__:a#\$#3|b#\$#4    __value__:3  __name__:metric_command_example2"`
 	// base64
 	p.ScriptType = "shell"
-	p.CmdPath = "/usr/bin/sh"
+	if runtime.GOOS == "darwin" {
+		p.CmdPath = "/bin/sh"
+	}
 	p.ScriptContent = base64.StdEncoding.EncodeToString([]byte(scriptContent))
 	p.ContentEncoding = "Base64"
 	p.User = "runner"
@@ -87,7 +93,9 @@ func TestCommandTestCollect(t *testing.T) {
 	p.ScriptType = "shell"
 	p.ContentEncoding = "PlainText"
 	p.User = "runner"
-
+	if runtime.GOOS == "darwin" {
+		p.CmdPath = "/bin/sh"
+	}
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
 		return
@@ -113,7 +121,9 @@ func TestCommandTestExceptionCollect(t *testing.T) {
 	p.ScriptType = "shell"
 	p.ContentEncoding = "PlainText"
 	p.User = "runner"
-
+	if runtime.GOOS == "darwin" {
+		p.CmdPath = "/bin/sh"
+	}
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
 		return
@@ -140,7 +150,9 @@ func TestCommandTestTimeoutCollect(t *testing.T) {
 	p.ScriptType = "shell"
 	p.ContentEncoding = "PlainText"
 	p.User = "runner"
-
+	if runtime.GOOS == "darwin" {
+		p.CmdPath = "/bin/sh"
+	}
 	if _, err := p.Init(ctx); err != nil {
 		t.Errorf("cannot init InputCommand: %v", err)
 		return
@@ -180,7 +192,9 @@ func TestCommandTestInit(t *testing.T) {
 		fmt.Println("expect error with script type not support", err)
 	}
 	p.ScriptType = "bash"
-
+	if runtime.GOOS == "darwin" {
+		p.CmdPath = "/bin/sh"
+	}
 	// Test the wrong User
 	p.User = "root"
 	_, err = p.Init(ctx)
