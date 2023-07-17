@@ -241,7 +241,7 @@ func TestScriptStorage(t *testing.T) {
 	fmt.Printf("Username %s\n", u.Username)
 
 	content := `echo -e "__labels__:hostname#\$#idc_cluster_env_name|ip#\$#ip_address    __value__:0  __name__:metric_command_example"`
-	storage := GetStorage("/data/workspaces/ilogtail/scriptStorage/")
+	storage := GetStorage("./")
 	if storage.Err != nil {
 		t.Errorf("create Storage error %s", storage.Err)
 		return
