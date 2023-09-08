@@ -29,10 +29,6 @@ bool ProcessorParseJsonNative::Init(const ComponentConfig& componentConfig) {
     PipelineConfig config = componentConfig.GetConfig();
 
     mSourceKey = DEFAULT_CONTENT_KEY;
-
-    mTimeFormat = config.mTimeFormat;
-    mTimeKey.clear();
-    mUseSystemTime = true;
     mDiscardUnmatch = config.mDiscardUnmatch;
     mUploadRawLog = config.mUploadRawLog;
     mRawLogTag = config.mAdvancedConfig.mRawLogTag;
@@ -64,32 +60,30 @@ void ProcessorParseJsonNative::Process(PipelineEventGroup& logGroup) {
     EventsContainer& events = logGroup.MutableEvents();
 
     for (auto it = events.begin(); it != events.end();) {
-        if (ProcessorParseJsonNative::ProcessEvent(logPath, *it)) {
+        if (ProcessEvent(logPath, *it)) {
             ++it;
         } else {
             it = events.erase(it);
         }
     }
-    return;
 }
 
 bool ProcessorParseJsonNative::ProcessEvent(const StringView& logPath, PipelineEventPtr& e) {
     if (!IsSupportedEvent(e)) {
         return true;
     }
-    LogEvent& sourceEvent = e.Cast<LogEvent>();
+    auto& sourceEvent = e.Cast<LogEvent>();
     if (!sourceEvent.HasContent(mSourceKey)) {
         return true;
     }
 
     StringView buffer = sourceEvent.GetContent(mSourceKey);
+    mProcParseInSizeBytes->Add(buffer.size());
 
     if (buffer.empty())
         return false;
-    mProcParseInSizeBytes->Add(buffer.size());
 
     bool parseSuccess = true;
-    uint64_t preciseTimestamp = 0;
     rapidjson::Document doc;
     doc.Parse(buffer.data(), buffer.size());
     if (doc.HasParseError()) {
@@ -104,7 +98,8 @@ bool ProcessorParseJsonNative::ProcessEvent(const StringView& logPath, PipelineE
                                                    GetContext().GetLogstoreName(),
                                                    GetContext().GetRegion());
         }
-        //        error = PARSE_LOG_FORMAT_ERROR;
+        mProcParseErrorTotal->Add(1);
+        ++(*mParseFailures);
         parseSuccess = false;
     } else if (!doc.IsObject()) {
         if (LogtailAlarm::GetInstance()->IsLowLevelAlarmValid()) {
@@ -117,7 +112,8 @@ bool ProcessorParseJsonNative::ProcessEvent(const StringView& logPath, PipelineE
                                                    GetContext().GetLogstoreName(),
                                                    GetContext().GetRegion());
         }
-        //        error = PARSE_LOG_FORMAT_ERROR;
+        mProcParseErrorTotal->Add(1);
+        ++(*mParseFailures);
         parseSuccess = false;
     }
 
@@ -130,16 +126,21 @@ bool ProcessorParseJsonNative::ProcessEvent(const StringView& logPath, PipelineE
                    sourceEvent);
         }
         return true;
-    } else if (!mDiscardUnmatch) {
+    }
+    // 解析失败且关闭丢弃解析失败日志开关
+    // 关闭丢弃解析失败日志开关，日志解析失败时，原始日志将作为__raw_log__字段的值上传到日志服务。
+    if (!parseSuccess && !mDiscardUnmatch) {
         AddLog(LogParser::UNMATCH_LOG_KEY, // __raw_log__
                sourceEvent.GetContent(mSourceKey),
                sourceEvent); // legacy behavior, should use sourceKey
     }
+    // 解析成功或者关闭丢弃解析失败日志开关
     if (parseSuccess || !mDiscardUnmatch) {
+        // 打开上传原始日志开关后，原始日志将作为__raw__字段的值与解析过的日志一起上传到日志服务。
         if (mUploadRawLog && (!parseSuccess || !mRawLogTagOverwritten)) {
             AddLog(mRawLogTag, sourceEvent.GetContent(mSourceKey), sourceEvent); // __raw__
         }
-        if (mSourceKeyOverwritten) {
+        if (parseSuccess && !mSourceKeyOverwritten) {
             sourceEvent.DelContent(mSourceKey);
         }
         return true;

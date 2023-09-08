@@ -29,6 +29,9 @@ public:
     void Process(PipelineEventGroup& logGroup) override;
 
 protected:
+    bool IsSupportedEvent(const PipelineEventPtr& e) override;
+
+private:
     std::string mSourceKey;
 
     bool mDiscardUnmatch = false;
@@ -54,8 +57,8 @@ protected:
 
     void AddLog(const StringView& key, const StringView& value, LogEvent& targetEvent);
     bool ProcessEvent(const StringView& logPath, PipelineEventPtr& e);
-    bool IsSupportedEvent(const PipelineEventPtr& e) override;
     static std::string RapidjsonValueToString(const rapidjson::Value& value);
+
 #ifdef APSARA_UNIT_TEST_MAIN
     friend class ProcessorParseJsonNativeUnittest;
 #endif
