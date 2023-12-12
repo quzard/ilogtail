@@ -12,6 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 这段 Go 代码是一个日志处理库，主要用于解析 Docker 容器的标准输出和错误流，并将其转换为结构化的日志数据。代码组织成结构体和相关的方法，主要用于处理和解析日志数据。
+
+// 以下是各函数及其作用：
+
+// safeContent 方法：确保 LogMessage 的内容不会无意中被修改。如果内容不是安全的（由 Safe 标志指示），它会创建内容的一个副本并更新 LogMessage。
+
+// NewDockerStdoutProcessor 函数：创建并初始化一个 DockerStdoutProcessor 实例。它接收参数配置如正则表达式、超时时间、日志大小限制等，并将这些参数设置到新创建的 DockerStdoutProcessor 结构体实例。
+
+// parseCRILog 函数：解析符合 CRI 日志格式的日志行。此函数处理日志的时间戳、流类型和内容，并返回一个 LogMessage 实例。
+
+// parseDockerJSONLog 函数：解析以 JSON 格式编码的 Docker 日志行。此函数将 JSON 解码为 DockerJSONLog 结构体，然后将其转换为 LogMessage 结构体。
+
+// ParseContainerLogLine 方法：根据日志行的格式选择合适的解析方法（JSON 或 CRI）。这个方法属于 DockerStdoutProcessor 结构体。
+
+// StreamAllowed 方法：根据 DockerStdoutProcessor 的配置检查是否处理给定流类型的日志（例如仅处理 stderr 或 stdout）。这个方法也属于 DockerStdoutProcessor 结构体。
+
+// Process 方法：处理由 fileBlock 字节数组表示的 Docker 容器的标准输出日志。它遍历日志行，使用 ParseContainerLogLine 解析，然后收集日志数据。这个方法还负责处理多行日志，并据此将日志行转换为 protocol.Log 结构。这个方法同样属于 DockerStdoutProcessor 结构体。
+
+// newRawLogBySingleLine 方法：将单行日志转换为 protocol.Log 结构体实例，这通常用于单行日志的场景。此方法也是 DockerStdoutProcessor 的一部分。
+
+// newRawLogByMultiLine 方法：将多行日志组合成一个 protocol.Log 结构体实例。此方法在处理需要跨多行日志消息的情况时使用，并且也属于 DockerStdoutProcessor。
+
+// 链路关系或工作流程大致如下：
+
+// 创建 DockerStdoutProcessor 实例。
+// 使用 Process 方法处理文件块 (fileBlock)。
+// 在 Process 方法中，遍历并解析每一行日志，可以是单行或多行日志。
+// 根据行的内容和 DockerStdoutProcessor 的配置，使用 parseDockerJSONLog 或 parseCRILog 解析日志行。
+// 对于每条解析的日志，检查它是否应该通过 StreamAllowed 方法被处理。
+// 根据解析的内容，使用 newRawLogBySingleLine 或 newRawLogByMultiLine 创建 protocol.Log 实例。
+// 将创建的 protocol.Log 实例传递给 collector 进行进一步的收集和处理。
+
 package stdout
 
 import (
