@@ -72,6 +72,8 @@ bool ProcessorSplitRegexNative::Init(const Json::Value& config) {
 }
 
 void ProcessorSplitRegexNative::Process(PipelineEventGroup& logGroup) {
+    logGroup.GetMetadata(EventGroupMetaKey::LOG_FILE_INODE);
+    
     if (logGroup.GetEvents().empty()) {
         return;
     }

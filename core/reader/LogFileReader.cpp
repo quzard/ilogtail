@@ -993,7 +993,7 @@ bool LogFileReader::ReadLog(LogBuffer& logBuffer, const Event* event) {
     }
 
     size_t lastFilePos = mLastFilePos;
-    bool allowRollback = true;
+    bool allowRollback = false;
     if (event != nullptr && event->IsReaderFlushTimeout()) {
         // If flush timeout event, we should filter whether the event is legacy.
         if (event->GetLastReadPos() == GetLastReadPos() && event->GetLastFilePos() == mLastFilePos

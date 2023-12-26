@@ -56,10 +56,14 @@ private:
     void MergeGoPipeline(const Json::Value& src, Json::Value& dst);
     void AddPluginToGoPipeline(const Json::Value& plugin, const std::string& module, Json::Value& dst);
     void CopyNativeGlobalParamToGoPipeline(Json::Value& root);
-    bool ShouldAddPluginToGoPipelineWithInput() const { return mInputs.empty() && mProcessorLine.empty(); }
+    bool ShouldAddPluginToGoPipelineWithInput() const { return mInputs.empty() && mProcessorLine.empty() && mProcessorLineTag.empty() && mProcessorLineSplit.empty(); }
 
     std::string mName;
     std::vector<std::unique_ptr<InputInstance>> mInputs;
+    std::vector<std::unique_ptr<ProcessorInstance>> mProcessorLineTag;
+
+    std::vector<std::unique_ptr<ProcessorInstance>> mProcessorLineSplit;
+
     std::vector<std::unique_ptr<ProcessorInstance>> mProcessorLine;
     std::vector<std::unique_ptr<FlusherInstance>> mFlushers;
     Json::Value mGoPipelineWithInput;
