@@ -110,20 +110,19 @@ void ProcessorSplitRegexNative::ProcessEvent(PipelineEventGroup& logGroup,
                                              const StringView& logPath,
                                              const PipelineEventPtr& e,
                                              EventsContainer& newEvents) {
-    // 如果事件不被支持，直接添加到新事件中并返回
     if (!IsSupportedEvent(e)) {
         newEvents.emplace_back(e);
         return;
     }
     // 将事件转换为日志事件
     const LogEvent& sourceEvent = e.Cast<LogEvent>();
-    // 如果日志事件中没有指定的内容，直接添加到新事件中并返回
     if (!sourceEvent.HasContent(mSourceKey)) {
         newEvents.emplace_back(e);
         return;
     }
     // 获取日志事件中的内容
     StringView sourceVal = sourceEvent.GetContent(mSourceKey);
+    std::cout << sourceVal << std::endl;
     std::vector<StringView> logIndex; // 所有分割的日志
     std::vector<StringView> discardIndex; // 用于发送警告的日志
     int feedLines = 0;
