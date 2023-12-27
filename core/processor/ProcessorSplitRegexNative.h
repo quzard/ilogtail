@@ -42,6 +42,8 @@ protected:
     bool IsSupportedEvent(const PipelineEventPtr& e) const override;
 
 private:
+    // std::unordered_map<StringView, EventsContainer> mUnprocessedLogs;
+
     void ProcessEvent(PipelineEventGroup& logGroup,
                       const StringView& logPath,
                       const PipelineEventPtr& e,
