@@ -28,6 +28,8 @@
 #include "plugin/instance/ProcessorInstance.h"
 #include "reader/LogFileReader.h" //SplitState
 
+using namespace std;
+
 namespace logtail {
 
 const std::string ProcessorSplitRegexNative::sName = "processor_split_regex_native";
@@ -72,22 +74,28 @@ bool ProcessorSplitRegexNative::Init(const Json::Value& config) {
 }
 
 void ProcessorSplitRegexNative::Process(PipelineEventGroup& logGroup) {
-    StringView fileInode = logGroup.GetMetadata(EventGroupMetaKey::LOG_FILE_INODE);
-
+    const StringView& mFileName = logGroup.GetMetadata(EventGroupMetaKey::LOG_FILE_PATH_RESOLVED);
+    const StringView& dev = logGroup.GetMetadata(EventGroupMetaKey::LOG_FILE_INODE_DEV);
+    const StringView& inode = logGroup.GetMetadata(EventGroupMetaKey::LOG_FILE_INODE);
+    const string configName = mContext->GetConfigName();
+    const string checkPointKey
+        = mFileName.to_string() + "*" + dev.to_string() + "*" + inode.to_string() + "*" + configName;
     if (logGroup.GetEvents().empty()) {
         return;
     }
 
-    // // 尝试获取并处理缓存中的未处理日志
-    // auto it = mUnprocessedLogs.find(fileInode);
-    // if (it != mUnprocessedLogs.end()) {
-    //     // 如果有缓存的日志，将其作为新事件处理
-    // }
+    StringView unProcessedLog;
+    // 尝试获取并处理缓存中的未处理日志
+    auto it = mUnprocessedLogs.find(checkPointKey);
+    if (it != mUnprocessedLogs.end()) {
+        unProcessedLog = it->second;
+        mUnprocessedLogs.erase(it);
+    }
 
     EventsContainer newEvents;
     const StringView& logPath = logGroup.GetMetadata(EventGroupMetaKey::LOG_FILE_PATH_RESOLVED);
     for (const PipelineEventPtr& e : logGroup.GetEvents()) {
-        ProcessEvent(logGroup, logPath, e, newEvents);
+        ProcessEvent(logGroup, logPath, e, newEvents, unProcessedLog);
     }
 
     // 在函数末尾，处理最后的日志并保存到缓存
@@ -109,7 +117,8 @@ bool ProcessorSplitRegexNative::IsSupportedEvent(const PipelineEventPtr& e) cons
 void ProcessorSplitRegexNative::ProcessEvent(PipelineEventGroup& logGroup,
                                              const StringView& logPath,
                                              const PipelineEventPtr& e,
-                                             EventsContainer& newEvents) {
+                                             EventsContainer& newEvents,
+                                             StringView& unProcessedLog) {
     if (!IsSupportedEvent(e)) {
         newEvents.emplace_back(e);
         return;
@@ -122,7 +131,11 @@ void ProcessorSplitRegexNative::ProcessEvent(PipelineEventGroup& logGroup,
     }
     // 获取日志事件中的内容
     StringView sourceVal = sourceEvent.GetContent(mSourceKey);
-    std::cout << sourceVal << std::endl;
+    if (unProcessedLog.data() != nullptr) {
+        sourceVal = StringView(unProcessedLog.data(), unProcessedLog.size() + sourceVal.size());
+        unProcessedLog = StringView();
+    }
+    std::cout << sourceVal.to_string() << std::endl;
     std::vector<StringView> logIndex; // 所有分割的日志
     std::vector<StringView> discardIndex; // 用于发送警告的日志
     int feedLines = 0;
@@ -446,7 +459,7 @@ bool ProcessorSplitRegexNative::LogSplit(const char* buffer,
             }
         }
     }
-    return anyMatched; // 返回anyMatched}
+    return anyMatched; // 返回anyMatched
 }
 
 // ProcessorSplitRegexNative类的成员函数，处理未匹配的日志

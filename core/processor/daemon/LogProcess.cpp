@@ -508,6 +508,8 @@ void LogProcess::FillEventGroupMetadata(LogBuffer& logBuffer, PipelineEventGroup
     eventGroup.SetMetadataNoCopy(EventGroupMetaKey::LOG_FILE_PATH_RESOLVED, logBuffer.logFileReader->GetHostLogPath());
     eventGroup.SetMetadata(EventGroupMetaKey::LOG_FILE_INODE,
                            std::to_string(logBuffer.logFileReader->GetDevInode().inode));
+    eventGroup.SetMetadata(EventGroupMetaKey::LOG_FILE_INODE_DEV,
+                           std::to_string(logBuffer.logFileReader->GetDevInode().dev));
 #ifdef __ENTERPRISE__
     std::string agentTag = EnterpriseConfigProvider::GetInstance()->GetUserDefinedIdSet();
     if (!agentTag.empty()) {

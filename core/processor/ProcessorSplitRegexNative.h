@@ -42,12 +42,13 @@ protected:
     bool IsSupportedEvent(const PipelineEventPtr& e) const override;
 
 private:
-    // std::unordered_map<StringView, EventsContainer> mUnprocessedLogs;
+    std::map<std::string, StringView> mUnprocessedLogs;
 
     void ProcessEvent(PipelineEventGroup& logGroup,
                       const StringView& logPath,
                       const PipelineEventPtr& e,
-                      EventsContainer& newEvents);
+                      EventsContainer& newEvents,
+                      StringView& unProcessedLog);
     bool LogSplit(const char* buffer,
                   int32_t size,
                   int32_t& lineFeed,
