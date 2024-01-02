@@ -99,7 +99,7 @@ bool Pipeline::Init(Config&& config) {
             // should not happen
             return false;
         }
-        mProcessorLineTag.emplace_back(std::move(processor));
+        mProcessorLine.emplace_back(std::move(processor));
     }
 
     // add log split processor for input_file
@@ -136,7 +136,7 @@ bool Pipeline::Init(Config&& config) {
             // should not happen
             return false;
         }
-        mProcessorLineSplit.emplace_back(std::move(processor));
+        mProcessorLine.emplace_back(std::move(processor));
     }
 
     for (size_t i = 0; i < config.mProcessors.size(); ++i) {
@@ -289,15 +289,6 @@ void Pipeline::Start() {
 }
 
 void Pipeline::Process(vector<PipelineEventGroup>& logGroupList) {
-    // tag
-    for (auto& p : mProcessorLineTag) {
-        p->Process(logGroupList);
-    }
-    // 切分
-    for (auto& p : mProcessorLineSplit) {
-        p->Process(logGroupList);
-    }
-
     for (auto& p : mProcessorLine) {
         p->Process(logGroupList);
     }
