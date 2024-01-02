@@ -132,9 +132,9 @@ void ProcessorSplitRegexNative::ProcessEvent(PipelineEventGroup& logGroup,
     if (!unProcessedLog.empty()) {
         combined_str = unProcessedLog + std::string(sourceVal);
         sourceVal = StringView(combined_str.data(), combined_str.size());
-        cout<<"combined_str start"<<endl;
-        cout<<sourceVal.to_string()<<endl;
-        cout<<"combined_str end"<<endl;
+        // cout<<"combined_str start"<<endl;
+        // cout<<sourceVal.to_string()<<endl;
+        // cout<<"combined_str end"<<endl;
         unProcessedLog = "";
     }
     std::vector<StringView> logIndex; // all splitted logs
@@ -207,9 +207,9 @@ void ProcessorSplitRegexNative::ProcessEvent(PipelineEventGroup& logGroup,
             } else {
                 unProcessedLog = std::string(content.data(), content.size());
             }
-            cout<<"unProcessedLog start"<<endl;
-            cout<<unProcessedLog<<endl;
-            cout<<"unProcessedLog end"<<endl;
+            // cout<<"unProcessedLog start"<<endl;
+            // cout<<unProcessedLog<<endl;
+            // cout<<"unProcessedLog end"<<endl;
         }
     }
 }
