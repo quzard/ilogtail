@@ -209,6 +209,8 @@ void* LogProcess::ProcessLoop(int32_t threadNo) {
     static atomic_int s_processCount{0};
     static atomic_long s_processBytes{0};
     static atomic_int s_processLines{0};
+    std::string processBytesFile = AppConfig::GetInstance()->GetProcessExecutionDir() + "/tmp/processBytes";
+    std::ofstream out(processBytesFile);
     // only thread 0 update metric
     int32_t lastUpdateMetricTime = time(NULL);
 #ifdef LOGTAIL_DEBUG_FLAG
@@ -234,6 +236,12 @@ void* LogProcess::ProcessLoop(int32_t threadNo) {
             // atomic counter will be negative if process speed is too fast.
             sMonitor->UpdateMetric("process_tps", 1.0 * s_processCount / (curTime - lastUpdateMetricTime));
             sMonitor->UpdateMetric("process_bytes_ps", 1.0 * s_processBytes / (curTime - lastUpdateMetricTime));
+            // 把processBytes写到一个文件里
+            double processBytes = 1.0 * s_processBytes / (curTime - lastUpdateMetricTime);
+            std::string processBytesStr = std::to_string(processBytes) + "\n";     
+            out << processBytesStr;
+            out.close();
+
             sMonitor->UpdateMetric("process_lines_ps", 1.0 * s_processLines / (curTime - lastUpdateMetricTime));
             lastUpdateMetricTime = curTime;
             s_processCount = 0;
@@ -437,6 +445,7 @@ void* LogProcess::ProcessLoop(int32_t threadNo) {
             }
         }
     }
+    out.close();
     LOG_WARNING(sLogger, ("LogProcessThread", "Exit")("threadNo", threadNo));
     return NULL;
 }
