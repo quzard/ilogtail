@@ -209,8 +209,6 @@ void* LogProcess::ProcessLoop(int32_t threadNo) {
     static atomic_int s_processCount{0};
     static atomic_long s_processBytes{0};
     static atomic_int s_processLines{0};
-    std::string processBytesFile = AppConfig::GetInstance()->GetProcessExecutionDir() + "/tmp/processBytes";
-    std::ofstream out(processBytesFile);
     // only thread 0 update metric
     int32_t lastUpdateMetricTime = time(NULL);
 #ifdef LOGTAIL_DEBUG_FLAG
@@ -230,19 +228,21 @@ void* LogProcess::ProcessLoop(int32_t threadNo) {
             aggregator->FlushReadyBuffer();
         }
 
-        if (threadNo == 0 && curTime - lastUpdateMetricTime >= 40) {
+        if (threadNo == 0 && curTime - lastUpdateMetricTime >= 2) {
             static auto sMonitor = LogtailMonitor::GetInstance();
 
             // atomic counter will be negative if process speed is too fast.
             sMonitor->UpdateMetric("process_tps", 1.0 * s_processCount / (curTime - lastUpdateMetricTime));
             sMonitor->UpdateMetric("process_bytes_ps", 1.0 * s_processBytes / (curTime - lastUpdateMetricTime));
+            sMonitor->UpdateMetric("process_lines_ps", 1.0 * s_processLines / (curTime - lastUpdateMetricTime));
             // 把processBytes写到一个文件里
+            std::string processBytesFile = AppConfig::GetInstance()->GetProcessExecutionDir() + "processBytes.txt";
+            std::ofstream out(processBytesFile, std::ios::app); // 使用追加模式打开文件
             double processBytes = 1.0 * s_processBytes / (curTime - lastUpdateMetricTime);
-            std::string processBytesStr = std::to_string(processBytes) + "\n";     
+            std::string processBytesStr = std::to_string(processBytes) + "\n";
             out << processBytesStr;
             out.close();
 
-            sMonitor->UpdateMetric("process_lines_ps", 1.0 * s_processLines / (curTime - lastUpdateMetricTime));
             lastUpdateMetricTime = curTime;
             s_processCount = 0;
             s_processBytes = 0;
@@ -445,7 +445,6 @@ void* LogProcess::ProcessLoop(int32_t threadNo) {
             }
         }
     }
-    out.close();
     LOG_WARNING(sLogger, ("LogProcessThread", "Exit")("threadNo", threadNo));
     return NULL;
 }
