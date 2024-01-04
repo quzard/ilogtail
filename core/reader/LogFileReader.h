@@ -357,6 +357,7 @@ protected:
     bool GetRawData(LogBuffer& logBuffer, int64_t fileSize, bool allowRollback = true);
     void ReadUTF8(LogBuffer& logBuffer, int64_t end, bool& moreData, bool allowRollback = true);
     void ReadGBK(LogBuffer& logBuffer, int64_t end, bool& moreData, bool allowRollback = true);
+    void ReadUTF16(LogBuffer& logBuffer, int64_t end, bool& moreData, bool allowRollback = true);
 
     size_t
     ReadFile(LogFileOperator& logFileOp, void* buf, size_t size, int64_t& offset, TruncateInfo** truncateInfo = NULL);
@@ -374,6 +375,7 @@ protected:
 
     bool CheckForFirstOpen(FileReadPolicy policy = BACKWARD_TO_FIXED_POS);
     void FixLastFilePos(LogFileOperator& logFileOp, int64_t endOffset);
+    void FixUtf16LastFilePos(LogFileOperator& logFileOp, int64_t endOffset);
     inline int64_t GetLastReadPos() const { // pos read but may not consumed, used for read needed
         return mLastFilePos + mCache.size();
     }
@@ -452,6 +454,10 @@ protected:
     std::string mRegion;
 
 private:
+    bool mIsLittleEndian = true;
+    bool mHasReadUtf16Bom = false;
+    char16_t mEnterChar16 = 0x000a;
+    void checkUtf16Bom();
     // Initialized when the exactly once feature is enabled.
     struct ExactlyOnceOption {
         std::string primaryCheckpointKey;
@@ -578,6 +584,7 @@ private:
 #ifdef APSARA_UNIT_TEST_MAIN
     friend class EventDispatcherTest;
     friend class LogFileReaderUnittest;
+    friend class JsonFileReaderUnittest;
     friend class LogMultiBytesUnittest;
     friend class ExactlyOnceReaderUnittest;
     friend class SenderUnittest;
