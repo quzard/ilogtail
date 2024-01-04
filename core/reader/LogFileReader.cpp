@@ -837,8 +837,8 @@ void LogFileReader::FixUtf16LastFilePos(LogFileOperator& op, int64_t endOffset) 
         char* bufferptr = NULL;
         char16_t* originUtf16Buffer = utf16Buffer;
         // find '\n' position
-        vector<size_t> lineFeedPos;
-        for (size_t idx = 0; idx < srcLength - 1; ++idx) {
+        vector<long> lineFeedPos;
+        for (long idx = 0; idx < long(srcLength - 1); ++idx) {
             if (utf16Buffer[idx] == mEnterChar16) {
                 lineFeedPos.push_back(idx);
                 utf16Buffer[idx] = '\0';
@@ -847,7 +847,7 @@ void LogFileReader::FixUtf16LastFilePos(LogFileOperator& op, int64_t endOffset) 
         lineFeedPos.push_back(srcLength - 1);
         // convert utf16 to utf8
         EncodingConverter::GetInstance()->ConvertUtf16ToUtf8(
-            utf16Buffer, &srcLength, bufferptr, &desLength, lineFeedPos, mIsLittleEndian);
+            utf16Buffer, &srcLength, bufferptr, desLength, lineFeedPos, mIsLittleEndian);
         size_t resultCharCount = desLength;
         LOG_DEBUG(sLogger,
                   ("utf16Buffer", utf16Buffer)("srcLength", srcLength)("bufferptr", bufferptr)("desLength", desLength));
@@ -1999,6 +1999,37 @@ void LogFileReader::ReadGBK(LogBuffer& logBuffer, int64_t end, bool& moreData, b
 }
 
 void LogFileReader::ReadUTF16(LogBuffer& logBuffer, int64_t end, bool& moreData, bool allowRollback) {
+    if (end < 2)
+    {
+        logBuffer.rawBuffer.clear();
+        return;
+    }
+    if (!mHasReadUtf16Bom || mLastFilePos == 0) {
+        // 判断utf16的字节序
+        char16_t utf16BOMBuffer[1] = {0};
+        size_t readBOMByte = 2;
+        int64_t filePos = 0;
+        TruncateInfo* truncateInfo = NULL;
+        ReadFile(mLogFileOp, utf16BOMBuffer, readBOMByte, filePos, &truncateInfo);
+        if (utf16BOMBuffer[0] == 0xfeff) {
+            mIsLittleEndian = true;
+            mEnterChar16 = 0x000a;
+            if (mLastFilePos == 0)
+            {
+                mLastFilePos += 2;
+            }
+        } else if (utf16BOMBuffer[0] == 0xfffe) {
+            mIsLittleEndian = false;
+            mEnterChar16 = 0x0a00;
+            if (mLastFilePos == 0)
+            {
+                mLastFilePos += 2;
+            }
+        } else {
+            mIsLittleEndian = true;
+        }
+        mHasReadUtf16Bom = true;
+    }
     logBuffer.readOffset = mLastFilePos;
     bool fromCpt = false;
     size_t READ_BYTE = getNextReadSize(end, fromCpt);
@@ -2006,27 +2037,26 @@ void LogFileReader::ReadUTF16(LogBuffer& logBuffer, int64_t end, bool& moreData,
     if (READ_BYTE < lastCacheSize) {
         READ_BYTE = lastCacheSize; // this should not happen, just avoid READ_BYTE >= 0 theoratically
     }
-    std::unique_ptr<char[]> gbkMemory(new char[READ_BYTE + 1]);
-    char* gbkBuffer = gbkMemory.get();
+    std::unique_ptr<char16_t[]> utf16Memory(new char16_t[READ_BYTE / 2 + 1]);
+    char16_t* utf16Buffer = utf16Memory.get();
     if (lastCacheSize) {
         READ_BYTE -= lastCacheSize; // reserve space to copy from cache if needed
     }
     TruncateInfo* truncateInfo = nullptr;
     int64_t lastReadPos = GetLastReadPos();
-    size_t readCharCount
-        = READ_BYTE ? ReadFile(mLogFileOp, gbkBuffer + lastCacheSize, READ_BYTE, lastReadPos, &truncateInfo) : 0UL;
+    size_t readCharCount = READ_BYTE ? ReadFile(mLogFileOp, utf16Buffer + lastCacheSize, READ_BYTE, lastReadPos, &truncateInfo) : 0UL;
     if (readCharCount == 0 && (!lastCacheSize || allowRollback)) { // just keep last cache
         return;
     }
     if (lastCacheSize) {
-        memcpy(gbkBuffer, mCache.data(), lastCacheSize); // copy from cache
+        memcpy(utf16Buffer, mCache.data(), lastCacheSize); // copy from cache
         readCharCount += lastCacheSize;
     }
     // Ignore \n if last is force read
-    if (gbkBuffer[0] == '\n' && mLastForceRead) {
-        ++gbkBuffer;
-        --readCharCount;
-        ++mLastFilePos;
+    if (utf16Buffer[0] == mEnterChar16 && mLastForceRead) {
+        ++utf16Buffer;
+        readCharCount -= 2;
+        mLastFilePos += 2;
         logBuffer.readOffset = mLastFilePos;
     }
     logBuffer.truncateInfo.reset(truncateInfo);
@@ -2034,41 +2064,45 @@ void LogFileReader::ReadUTF16(LogBuffer& logBuffer, int64_t end, bool& moreData,
     const size_t originReadCount = readCharCount;
     moreData = (readCharCount == BUFFER_SIZE);
     bool logTooLongSplitFlag = false;
-    auto alignedBytes = readCharCount;
-    if (allowRollback) {
-        alignedBytes = AlignLastCharacter(gbkBuffer, readCharCount);
+    bool adjustFlag = false;
+    while (readCharCount > 0 && utf16Buffer[readCharCount / 2 - 1] != mEnterChar16) {
+        readCharCount -= 2;
+        adjustFlag = true;
     }
-    if (alignedBytes == 0) {
+    if (readCharCount == 0) {
         if (moreData) { // excessively long line without valid wchar
             logTooLongSplitFlag = true;
-            alignedBytes = BUFFER_SIZE;
+            readCharCount = BUFFER_SIZE;
         } else {
             // line is not finished yet nor more data, put all data in cache
-            mCache.assign(gbkBuffer, originReadCount);
+            mCache.assign((char*)utf16Buffer, originReadCount);
             return;
         }
     }
-    readCharCount = alignedBytes;
-    gbkBuffer[readCharCount] = '\0';
+    utf16Buffer[readCharCount / 2] = '\0';
 
-    vector<long> lineFeedPos = {-1}; // elements point to the last char of each line
-    for (long idx = 0; idx < long(readCharCount - 1); ++idx) {
-        if (gbkBuffer[idx] == '\n')
+    size_t srcLength = readCharCount / 2;
+    size_t desLength = 0;
+    char16_t* originUtf16Buffer = utf16Buffer;
+
+    vector<long> lineFeedPos;
+    for (long idx = 0; idx < long(srcLength - 1); ++idx) {
+        if (utf16Buffer[idx] == mEnterChar16) {
             lineFeedPos.push_back(idx);
+        }
     }
-    lineFeedPos.push_back(readCharCount - 1);
+    lineFeedPos.push_back(srcLength - 1);
 
-    size_t srcLength = readCharCount;
-    size_t requiredLen
-        = EncodingConverter::GetInstance()->ConvertGbk2Utf8(gbkBuffer, &srcLength, nullptr, 0, lineFeedPos);
+    size_t requiredLen = EncodingConverter::GetInstance()->ConvertUtf16ToUtf8(
+        utf16Buffer, &srcLength, nullptr, 0, lineFeedPos, mIsLittleEndian);
     StringBuffer stringMemory = logBuffer.AllocateStringBuffer(requiredLen + 1);
-    size_t resultCharCount = EncodingConverter::GetInstance()->ConvertGbk2Utf8(
-        gbkBuffer, &srcLength, stringMemory.data, stringMemory.capacity, lineFeedPos);
+    size_t resultCharCount = EncodingConverter::GetInstance()->ConvertUtf16ToUtf8(
+        utf16Buffer, &srcLength, stringMemory.data, stringMemory.capacity, lineFeedPos, mIsLittleEndian);
     char* stringBuffer = stringMemory.data; // utf8 buffer
     if (resultCharCount == 0) {
         if (readCharCount < originReadCount) {
             // skip unconvertable part, put rollbacked part in cache
-            mCache.assign(gbkBuffer + readCharCount, originReadCount - readCharCount);
+            mCache.assign((char*)utf16Buffer + readCharCount, originReadCount - readCharCount);
         } else {
             mCache.clear();
         }
@@ -2093,7 +2127,7 @@ void LogFileReader::ReadUTF16(LogBuffer& logBuffer, int64_t end, bool& moreData,
             logTooLongSplitFlag = true;
         } else {
             // line is not finished yet nor more data, put all data in cache
-            mCache.assign(gbkBuffer, originReadCount);
+            mCache.assign((char*)utf16Buffer, originReadCount);
             return;
         }
     }
@@ -2104,7 +2138,7 @@ void LogFileReader::ReadUTF16(LogBuffer& logBuffer, int64_t end, bool& moreData,
     }
     if (readCharCount < originReadCount) {
         // rollback happend, put rollbacked part in cache
-        mCache.assign(gbkBuffer + readCharCount, originReadCount - readCharCount);
+        mCache.assign((char*)utf16Buffer + readCharCount, originReadCount - readCharCount);
     } else {
         mCache.clear();
     }
@@ -2136,7 +2170,7 @@ void LogFileReader::ReadUTF16(LogBuffer& logBuffer, int64_t end, bool& moreData,
     }
     mLastForceRead = !allowRollback;
     LOG_DEBUG(sLogger,
-              ("read gbk buffer, offset", mLastFilePos)("origin read", originReadCount)("at last read", readCharCount));
+        ("read utf16 buffer, offset", mLastFilePos)("origin read", originReadCount)("at last read", readCharCount));
 }
 
 size_t

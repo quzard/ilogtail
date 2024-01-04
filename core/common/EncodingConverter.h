@@ -23,7 +23,7 @@
 #include "reader/SourceBuffer.h"
 
 namespace logtail {
-enum FileEncoding { ENCODING_UTF8, ENCODING_GBK };
+enum FileEncoding { ENCODING_UTF8, ENCODING_GBK, ENCODING_UTF16 };
 
 class EncodingConverter {
 private:
@@ -53,6 +53,9 @@ public:
     //   0 will be returned (ignore @linePosVec).
     size_t ConvertGbk2Utf8(
         const char* src, size_t* srcLength, char* des, size_t desLength, const std::vector<long>& linePosVec) const;
+
+    size_t ConvertUtf16ToUtf8(
+        const char16_t* src, size_t* srcLength, char* desOut, size_t desLength, const std::vector<long>& linePosVec, bool isLittleEndian) const;
 
 #if defined(_MSC_VER)
     // FromUTF8ToACP converts @s encoded in UTF8 to ACP.

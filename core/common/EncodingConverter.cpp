@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "EncodingConverter.h"
+
+#include <iostream>
+
 #include "LogtailAlarm.h"
 #include "logger/Logger.h"
 #if defined(__linux__)
@@ -20,11 +23,14 @@
 #elif defined(_MSC_VER)
 #include <Windows.h>
 #endif
+using namespace std;
 
 namespace logtail {
 
 #if defined(__linux__)
 static iconv_t mGbk2Utf8Cd = (iconv_t)-1;
+static iconv_t mUtf16LittleToUtf8Cd = (iconv_t)-1;
+static iconv_t mUtf16BigToUtf8Cd = (iconv_t)-1;
 #endif
 
 EncodingConverter::EncodingConverter() {
@@ -34,6 +40,16 @@ EncodingConverter::EncodingConverter() {
         LOG_ERROR(sLogger, ("create Gbk2Utf8 iconv descriptor fail, errno", strerror(errno)));
     else
         iconv(mGbk2Utf8Cd, NULL, NULL, NULL, NULL);
+    mUtf16LittleToUtf8Cd = iconv_open("UTF-8", "UTF-16LE");
+    if (mUtf16LittleToUtf8Cd == (iconv_t)(-1))
+        LOG_ERROR(sLogger, ("create mUtf16LittleToUtf8Cd iconv descriptor fail, errno", strerror(errno)));
+    else
+        iconv(mUtf16LittleToUtf8Cd, NULL, NULL, NULL, NULL);
+    mUtf16BigToUtf8Cd = iconv_open("UTF-8", "UTF-16BE");
+    if (mUtf16BigToUtf8Cd == (iconv_t)(-1))
+        LOG_ERROR(sLogger, ("create mUtf16BigToUtf8Cd iconv descriptor fail, errno", strerror(errno)));
+    else
+        iconv(mUtf16BigToUtf8Cd, NULL, NULL, NULL, NULL);
 #endif
 }
 
@@ -41,6 +57,10 @@ EncodingConverter::~EncodingConverter() {
 #if defined(__linux__)
     if (mGbk2Utf8Cd != (iconv_t)(-1))
         iconv_close(mGbk2Utf8Cd);
+    if (mUtf16LittleToUtf8Cd != (iconv_t)(-1))
+        iconv_close(mUtf16LittleToUtf8Cd);
+    if (mUtf16BigToUtf8Cd != (iconv_t)(-1))
+        iconv_close(mUtf16BigToUtf8Cd);
 #endif
 }
 
@@ -130,6 +150,103 @@ size_t EncodingConverter::ConvertGbk2Utf8(
             return 0;
         }
     delete[] wszUtf8;
+    return outLen;
+#endif
+}
+
+size_t EncodingConverter::ConvertUtf16ToUtf8(
+    const char16_t* src, size_t* srcLength, char* desOut, size_t desLength, const std::vector<long>& linePosVec, bool isLittleEndian) const {
+#if defined(__linux__)
+    if (src == NULL || *srcLength == 0 || mUtf16LittleToUtf8Cd == (iconv_t)(-1) || mUtf16BigToUtf8Cd == (iconv_t)(-1)) {
+        LOG_ERROR(sLogger, ("invalid iconv descriptor fail or invalid buffer pointer, mUtf16LittleToUtf8Cd",
+                   mUtf16LittleToUtf8Cd)("mUtf16BigToUtf8Cd", mUtf16BigToUtf8Cd));
+        return 0;
+    }
+    // utf8 每个字符最大字节数为4
+    size_t maxRequire = *srcLength * 4;
+    if (desOut == nullptr) {
+        return maxRequire;
+    }
+    if (desLength < maxRequire + 1) {
+        return 0;
+    }
+
+    char* des = desOut;
+    des[*srcLength * 4] = '\0';
+    const char16_t* originSrc = src;
+    char* originDes = des;
+    size_t beginIndex = 0;
+    size_t endIndex = *srcLength;
+    size_t destIndex = 0;
+    size_t maxDestSize = desLength;
+    for (size_t i = 0; i < linePosVec.size(); ++i) {
+        endIndex = linePosVec[i];
+        src = originSrc + beginIndex;
+        des = originDes + destIndex;
+        // include '\n'
+        *srcLength = endIndex - beginIndex + 1;
+        desLength = maxDestSize - destIndex;
+        // char16的大小是2个char
+        *srcLength = *srcLength * 2;
+        if (isLittleEndian) {
+            size_t ret = iconv(mUtf16LittleToUtf8Cd, (char**)&src, srcLength, &des, &desLength);
+            if (ret == (size_t)(-1)) {
+                LOG_ERROR(sLogger, ("convert UTF16-LE to UTF8 fail, errno", strerror(errno)));
+                iconv(mUtf16LittleToUtf8Cd, NULL, NULL, NULL, NULL); // Clear status.
+                LogtailAlarm::GetInstance()->SendAlarm(ENCODING_CONVERT_ALARM, "convert UTF16-LE to UTF8 fail");
+                // use memcpy
+                memcpy(originDes + destIndex, originSrc + beginIndex, endIndex - beginIndex + 1);
+                destIndex += endIndex - beginIndex + 1;
+            } else {
+                destIndex = des - originDes;
+            }
+            beginIndex = src - originSrc;
+        } else {
+            size_t ret = iconv(mUtf16BigToUtf8Cd, (char**)&src, srcLength, &des, &desLength);
+            if (ret == (size_t)(-1)) {
+                LOG_ERROR(sLogger, ("convert UTF16-BE to UTF8 fail, errno", strerror(errno)));
+                iconv(mUtf16BigToUtf8Cd, NULL, NULL, NULL, NULL); // Clear status.
+                LogtailAlarm::GetInstance()->SendAlarm(ENCODING_CONVERT_ALARM, "convert UTF16-BE to UTF8 fail");
+                // use memcpy
+                memcpy(originDes + destIndex, originSrc + beginIndex, endIndex - beginIndex + 1);
+                destIndex += endIndex - beginIndex + 1;
+            } else {
+                destIndex = des - originDes;
+            }
+            beginIndex = src - originSrc;
+        }
+    }
+    return destIndex;
+
+#elif defined(_MSC_VER)
+    // swap endianness of UTF-16 BE to UTF-16 LE
+    if (!isLittleEndian) {
+        for (size_t i = 0; i < *srcLength; ++i) {
+            src[i] = (src[i] >> 8) | (src[i] << 8);
+        }
+    }
+    int srcLengthInt = static_cast<int>(*srcLength);
+
+    if (desOut == nullptr) {
+        // 计算UTF-8字符串的长度
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)src, srcLengthInt, NULL, 0, NULL, NULL);
+        if (size_needed == 0) {
+            LOG_ERROR(sLogger, ("convert UTF16 to UTF8 fail, WideCharToMultiByte error", GetLastError())("sample", std::u16string(src, 0, 1024)));
+            return 0;
+        }
+        return size_needed;
+    }
+
+    char* des = desOut;
+    size_needed = desLength - 1;
+    des[size_needed] = '\0';
+
+    // 转换UTF-16字符串为UTF-8
+    int outLen = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)src, srcLengthInt, des, size_needed, NULL, NULL);
+    if (outLen == 0) {
+        LOG_ERROR(sLogger, ("convert UTF16 to UTF8 fail, WideCharToMultiByte error", GetLastError())("sample", std::u16string(src, 0, 1024)));
+        return 0;
+    }
     return outLen;
 #endif
 }

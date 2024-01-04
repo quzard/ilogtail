@@ -34,6 +34,7 @@
 #include "reader/SourceBuffer.h"
 #include "reader/FileReaderOptions.h"
 #include "file_server/MultilineOptions.h"
+#include <string>
 
 namespace logtail {
 
@@ -397,6 +398,7 @@ protected:
     int64_t mLastFileSize = 0;
     time_t mLastMTime = 0;
     std::string mCache;
+    std::u16string mCache16;
     // std::string mProjectName;
     std::string mTopicName;
     time_t mLastUpdateTime;
