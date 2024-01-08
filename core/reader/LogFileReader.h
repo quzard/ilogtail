@@ -129,8 +129,11 @@ public:
 
     FileCompareResult CompareToFile(const std::string& filePath);
 
-    virtual int32_t
-    LastMatchedLine(char* buffer, int32_t size, int32_t& rollbackLineFeedCount, bool allowRollback = true);
+    virtual int32_t LastMatchedLine(char* buffer,
+                                    int32_t size,
+                                    int32_t& rollbackLineFeedCount,
+                                    bool allowRollback = true,
+                                    const std::vector<long>& skipBeginPosVec = std::vector<long>());
 
     size_t AlignLastLine(char* buffer, size_t size);
 

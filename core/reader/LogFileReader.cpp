@@ -1689,16 +1689,18 @@ void LogFileReader::ReadContainerd(LogBuffer& logBuffer, int64_t end, bool& more
     lineFeedPos.push_back(readCharCount - 1);
 
     vector<long> newLineFeedPos = {-1};
+    vector<long> skipBeginPosVec;
     size_t srcLength = readCharCount;
     size_t requiredLen = EncodingConverter::GetInstance()->ConvertContainerd2Utf8(
-        containerdBuffer, &srcLength, nullptr, 0, lineFeedPos, newLineFeedPos);
+        containerdBuffer, &srcLength, nullptr, 0, lineFeedPos, newLineFeedPos, skipBeginPosVec);
     StringBuffer stringMemory = logBuffer.AllocateStringBuffer(requiredLen + 1);
     size_t resultCharCount = EncodingConverter::GetInstance()->ConvertContainerd2Utf8(containerdBuffer,
                                                                                       &srcLength,
                                                                                       stringMemory.data,
                                                                                       stringMemory.capacity,
                                                                                       lineFeedPos,
-                                                                                      newLineFeedPos);
+                                                                                      newLineFeedPos,
+                                                                                      skipBeginPosVec);
     char* stringBuffer = stringMemory.data; // utf8 buffer
     if (resultCharCount == 0) {
         if (readCharCount < originReadCount) {
@@ -1714,7 +1716,7 @@ void LogFileReader::ReadContainerd(LogBuffer& logBuffer, int64_t end, bool& more
     int32_t rollbackLineFeedCount = 0;
     int32_t bakResultCharCount = resultCharCount;
     if (allowRollback || mReaderConfig.second->RequiringJsonReader()) {
-        resultCharCount = LastMatchedLine(stringBuffer, resultCharCount, rollbackLineFeedCount, allowRollback);
+        resultCharCount = LastMatchedLine(stringBuffer, resultCharCount, rollbackLineFeedCount, allowRollback, skipBeginPosVec);
     }
     if (resultCharCount == 0) {
         if (moreData) {
@@ -1722,7 +1724,7 @@ void LogFileReader::ReadContainerd(LogBuffer& logBuffer, int64_t end, bool& more
             rollbackLineFeedCount = 0;
             if (mReaderConfig.second->RequiringJsonReader()) {
                 int32_t rollbackLineFeedCount;
-                LastMatchedLine(stringBuffer, resultCharCount, rollbackLineFeedCount, false);
+                LastMatchedLine(stringBuffer, resultCharCount, rollbackLineFeedCount, false, skipBeginPosVec);
             }
             // Cannot get the split position here, so just mark a flag and send alarm later
             logTooLongSplitFlag = true;
@@ -2126,7 +2128,11 @@ LogFileReader::FileCompareResult LogFileReader::CompareToFile(const string& file
         1. xxx\nend\n -> xxx\nend
         1. xxx\nend\nxxx\n -> xxx\nend
 */
-int32_t LogFileReader::LastMatchedLine(char* buffer, int32_t size, int32_t& rollbackLineFeedCount, bool allowRollback) {
+int32_t LogFileReader::LastMatchedLine(char* buffer,
+                                       int32_t size,
+                                       int32_t& rollbackLineFeedCount,
+                                       bool allowRollback,
+                                       const std::vector<long>& skipBeginPosVec) {
     if (!allowRollback) {
         return size;
     }
@@ -2148,18 +2154,26 @@ int32_t LogFileReader::LastMatchedLine(char* buffer, int32_t size, int32_t& roll
     // Multiline rollback
     int begPs = size - 2;
     std::string exception;
+    size_t skipBeginPosVecIdx = skipBeginPosVec.size();
+    long begPsOffset = 0;
     while (begPs >= 0) {
         if (buffer[begPs] == '\n' || begPs == 0) {
+            if (skipBeginPosVecIdx > 0) {
+                --skipBeginPosVecIdx;
+                begPsOffset = skipBeginPosVec[skipBeginPosVecIdx];
+            } else {
+                begPsOffset = 0;
+            }
             int lineBegin = begPs == 0 ? 0 : begPs + 1;
             if (mMultilineConfig.first->GetContinuePatternReg()
-                && BoostRegexMatch(buffer + lineBegin,
+                && BoostRegexMatch(buffer + lineBegin + begPsOffset,
                                    endPs - lineBegin,
                                    *mMultilineConfig.first->GetContinuePatternReg(),
                                    exception)) {
                 ++rollbackLineFeedCount;
                 endPs = begPs;
             } else if (mMultilineConfig.first->GetEndPatternReg()
-                       && BoostRegexMatch(buffer + lineBegin,
+                       && BoostRegexMatch(buffer + lineBegin + begPsOffset,
                                           endPs - lineBegin,
                                           *mMultilineConfig.first->GetEndPatternReg(),
                                           exception)) {
@@ -2171,7 +2185,7 @@ int32_t LogFileReader::LastMatchedLine(char* buffer, int32_t size, int32_t& roll
                     endPs = begPs;
                 }
             } else if (mMultilineConfig.first->GetStartPatternReg()
-                       && BoostRegexMatch(buffer + lineBegin,
+                       && BoostRegexMatch(buffer + lineBegin + begPsOffset,
                                           endPs - lineBegin,
                                           *mMultilineConfig.first->GetStartPatternReg(),
                                           exception)) {

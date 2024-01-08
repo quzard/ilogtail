@@ -204,7 +204,8 @@ size_t EncodingConverter::ConvertContainerd2Utf8(const char* src,
                                                  char* desOut,
                                                  size_t desLength,
                                                  const std::vector<long>& linePosVec,
-                                                 std::vector<long>& newLinePosVec) const {
+                                                 std::vector<long>& newLinePosVec,
+                                                 std::vector<long>& skipBeginPosVec) const {
     if (src == NULL || *srcLength == 0) {
         LOG_ERROR(sLogger, ("invalid buffer pointer", ""));
         return 0;
@@ -280,6 +281,7 @@ size_t EncodingConverter::ConvertContainerd2Utf8(const char* src,
         }
         if (isPartial == false) {
             newLinePosVec.push_back(linePosVec[i]);
+            skipBeginPosVec.push_back(src-beginSrc);
         }
         for (; src <= originSrc + endIndex; ++src, ++destIndexTmp) {
             if (*src == lineSuffix && isPartial) {
