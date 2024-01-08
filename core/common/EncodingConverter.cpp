@@ -198,4 +198,101 @@ std::string EncodingConverter::FromACPToUTF8(const std::string& s) const {
 }
 #endif
 
+
+size_t EncodingConverter::ConvertContainerd2Utf8(const char* src,
+                                                 size_t* srcLength,
+                                                 char* desOut,
+                                                 size_t desLength,
+                                                 const std::vector<long>& linePosVec,
+                                                 std::vector<long>& newLinePosVec,
+                                                 std::vector<long>& skipBeginPosVec) const {
+    if (src == NULL || *srcLength == 0) {
+        LOG_ERROR(sLogger, ("invalid buffer pointer", ""));
+        return 0;
+    }
+    size_t maxRequire = *srcLength;
+    if (desOut == nullptr) {
+        return maxRequire;
+    }
+    if (desLength < maxRequire + 1) {
+        return 0;
+    }
+    bool isPartial = false;
+    long destIndex = 0; 
+    size_t beginIndex = 0;
+    size_t endIndex = *srcLength;
+    const char* originSrc = src;
+    // 按行来转换
+    for (size_t i = 0; i < linePosVec.size(); ++i) {
+        endIndex = linePosVec[i];
+        src = originSrc + beginIndex;
+        long destIndexTmp = destIndex;
+        const char* beginSrc = src;
+        // 寻找第一个分隔符位置 时间
+        {
+            const char* pch = std::search(src, originSrc + endIndex + 1, contianerdDelimiter.begin(), contianerdDelimiter.end());
+            if (pch == originSrc + endIndex + 1) {
+                // 没有找到分隔符
+                continue;
+            } else {
+                if (isPartial) {
+                    src = pch + 1;
+                } else {
+                    for (; src <= pch; ++src, ++destIndexTmp) {
+                        desOut[destIndexTmp] = *src;
+                    }
+                }
+            }
+        }
+        // 寻找第二个分隔符位置 stdout/stderr
+        {
+            const char* pch = std::search(src, originSrc + endIndex + 1, contianerdDelimiter.begin(), contianerdDelimiter.end());
+            if (pch == originSrc + endIndex + 1) {
+                // 没有找到分隔符
+                continue;
+            } else {
+                if (isPartial) {
+                    src = pch + 1;
+                } else {
+                    for (; src <= pch; ++src, ++destIndexTmp) {
+                        desOut[destIndexTmp] = *src;
+                    }
+                }
+            }
+        }
+        // 寻找第三个分隔符位置 容器标签
+        {
+            const char* pch = std::search(src, originSrc + endIndex + 1, contianerdDelimiter.begin(), contianerdDelimiter.end());
+            if (pch == originSrc + endIndex + 1) {
+                // 没有找到分隔符
+                continue;
+            } else {
+                src = pch-1;
+                if (*src == contianerdPartTag) {
+                    isPartial = true;
+                } else if (*src == contianerdFullTag) {
+                    isPartial = false;
+                } else {
+                    // 未知的容器标签
+                    continue;
+                }
+                src = pch + 1;
+            }
+        }
+        if (isPartial == false) {
+            newLinePosVec.push_back(linePosVec[i]);
+            skipBeginPosVec.push_back(src-beginSrc);
+        }
+        for (; src <= originSrc + endIndex; ++src, ++destIndexTmp) {
+            if (*src == lineSuffix && isPartial) {
+                // 行后缀
+                break;
+            }
+            desOut[destIndexTmp] = *src;
+        }
+        beginIndex = endIndex + 1;
+        destIndex = destIndexTmp;
+    }
+    return destIndex;
+}
 } // namespace logtail

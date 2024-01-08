@@ -129,8 +129,13 @@ public:
 
     FileCompareResult CompareToFile(const std::string& filePath);
 
-    virtual int32_t
-    LastMatchedLine(char* buffer, int32_t size, int32_t& rollbackLineFeedCount, bool allowRollback = true);
+    virtual int32_t LastMatchedLine(char* buffer,
+                                    int32_t size,
+                                    int32_t& rollbackLineFeedCount,
+                                    bool allowRollback = true,
+                                    const std::vector<long>& skipBeginPosVec = std::vector<long>());
+
+    size_t AlignLastLine(char* buffer, size_t size);
 
     size_t AlignLastCharacter(char* buffer, size_t size);
 
@@ -358,6 +363,7 @@ public:
 
 protected:
     bool GetRawData(LogBuffer& logBuffer, int64_t fileSize, bool allowRollback = true);
+    void ReadContainerd(LogBuffer& logBuffer, int64_t end, bool& moreData, bool allowRollback = true);
     void ReadUTF8(LogBuffer& logBuffer, int64_t end, bool& moreData, bool allowRollback = true);
     void ReadGBK(LogBuffer& logBuffer, int64_t end, bool& moreData, bool allowRollback = true);
 

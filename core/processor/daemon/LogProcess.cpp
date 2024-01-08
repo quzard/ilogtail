@@ -214,7 +214,7 @@ void* LogProcess::ProcessLoop(int32_t threadNo) {
     bool isBenchmark = false;
     char* env_var = std::getenv("IS_BENCHMARK");
     if (env_var != nullptr) {
-        isBenchmark = std::string(env_var) == "1";
+        isBenchmark = std::string(env_var) == "enable";
     }
     if (isBenchmark) {
         updateMetricTimeInterval = 2;

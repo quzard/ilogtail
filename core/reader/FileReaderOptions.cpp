@@ -67,6 +67,8 @@ bool FileReaderOptions::Init(const Json::Value& config, const PipelineContext& c
         mFileEncoding = Encoding::GBK;
     } else if (encoding == "utf16") {
         mFileEncoding = Encoding::UTF16;
+    } else if (encoding == "containerd") {
+        mFileEncoding = Encoding::Containerd;
     } else if (!encoding.empty() && encoding != "utf8") {
         PARAM_ERROR_RETURN(ctx.GetLogger(),
                            ctx.GetAlarm(),
