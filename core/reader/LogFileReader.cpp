@@ -1689,18 +1689,16 @@ void LogFileReader::ReadContainerd(LogBuffer& logBuffer, int64_t end, bool& more
     lineFeedPos.push_back(readCharCount - 1);
 
     vector<long> newLineFeedPos = {-1};
-    vector<long> skipBeginPosVec;
     size_t srcLength = readCharCount;
     size_t requiredLen = EncodingConverter::GetInstance()->ConvertContainerd2Utf8(
-        containerdBuffer, &srcLength, nullptr, 0, lineFeedPos, newLineFeedPos, skipBeginPosVec);
+        containerdBuffer, &srcLength, nullptr, 0, lineFeedPos, newLineFeedPos);
     StringBuffer stringMemory = logBuffer.AllocateStringBuffer(requiredLen + 1);
     size_t resultCharCount = EncodingConverter::GetInstance()->ConvertContainerd2Utf8(containerdBuffer,
                                                                                       &srcLength,
                                                                                       stringMemory.data,
                                                                                       stringMemory.capacity,
                                                                                       lineFeedPos,
-                                                                                      newLineFeedPos,
-                                                                                      skipBeginPosVec);
+                                                                                      newLineFeedPos);
     char* stringBuffer = stringMemory.data; // utf8 buffer
     if (resultCharCount == 0) {
         if (readCharCount < originReadCount) {

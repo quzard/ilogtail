@@ -64,8 +64,7 @@ public:
                                   char* des,
                                   size_t desLength,
                                   const std::vector<long>& linePosVec,
-                                  std::vector<long>& newLinePosVec,
-                                  std::vector<long>& skipBeginPosVec) const;
+                                  std::vector<long>& newLinePosVec) const;
 
 #if defined(_MSC_VER)
     // FromUTF8ToACP converts @s encoded in UTF8 to ACP.
