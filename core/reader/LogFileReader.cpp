@@ -1716,7 +1716,7 @@ void LogFileReader::ReadContainerd(LogBuffer& logBuffer, int64_t end, bool& more
     int32_t rollbackLineFeedCount = 0;
     int32_t bakResultCharCount = resultCharCount;
     if (allowRollback || mReaderConfig.second->RequiringJsonReader()) {
-        resultCharCount = LastMatchedLine(stringBuffer, resultCharCount, rollbackLineFeedCount, allowRollback, skipBeginPosVec);
+        resultCharCount = LastMatchedLine(stringBuffer, resultCharCount, rollbackLineFeedCount, allowRollback);
     }
     if (resultCharCount == 0) {
         if (moreData) {
@@ -1724,7 +1724,7 @@ void LogFileReader::ReadContainerd(LogBuffer& logBuffer, int64_t end, bool& more
             rollbackLineFeedCount = 0;
             if (mReaderConfig.second->RequiringJsonReader()) {
                 int32_t rollbackLineFeedCount;
-                LastMatchedLine(stringBuffer, resultCharCount, rollbackLineFeedCount, false, skipBeginPosVec);
+                LastMatchedLine(stringBuffer, resultCharCount, rollbackLineFeedCount, false);
             }
             // Cannot get the split position here, so just mark a flag and send alarm later
             logTooLongSplitFlag = true;

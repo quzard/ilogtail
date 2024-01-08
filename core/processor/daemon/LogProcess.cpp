@@ -217,7 +217,7 @@ void* LogProcess::ProcessLoop(int32_t threadNo) {
         isBenchmark = std::string(env_var) == "enable";
     }
     if (isBenchmark) {
-        updateMetricTimeInterval = 2;
+        updateMetricTimeInterval = 5;
     }
 #ifdef LOGTAIL_DEBUG_FLAG
     int32_t lastPrintTime = time(NULL);
