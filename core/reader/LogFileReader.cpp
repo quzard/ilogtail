@@ -2128,11 +2128,7 @@ LogFileReader::FileCompareResult LogFileReader::CompareToFile(const string& file
         1. xxx\nend\n -> xxx\nend
         1. xxx\nend\nxxx\n -> xxx\nend
 */
-int32_t LogFileReader::LastMatchedLine(char* buffer,
-                                       int32_t size,
-                                       int32_t& rollbackLineFeedCount,
-                                       bool allowRollback,
-                                       const std::vector<long>& skipBeginPosVec) {
+int32_t LogFileReader::LastMatchedLine(char* buffer, int32_t size, int32_t& rollbackLineFeedCount, bool allowRollback) {
     if (!allowRollback) {
         return size;
     }
@@ -2154,26 +2150,18 @@ int32_t LogFileReader::LastMatchedLine(char* buffer,
     // Multiline rollback
     int begPs = size - 2;
     std::string exception;
-    size_t skipBeginPosVecIdx = skipBeginPosVec.size();
-    long begPsOffset = 0;
     while (begPs >= 0) {
         if (buffer[begPs] == '\n' || begPs == 0) {
-            if (skipBeginPosVecIdx > 0) {
-                --skipBeginPosVecIdx;
-                begPsOffset = skipBeginPosVec[skipBeginPosVecIdx];
-            } else {
-                begPsOffset = 0;
-            }
             int lineBegin = begPs == 0 ? 0 : begPs + 1;
             if (mMultilineConfig.first->GetContinuePatternReg()
-                && BoostRegexMatch(buffer + lineBegin + begPsOffset,
+                && BoostRegexMatch(buffer + lineBegin,
                                    endPs - lineBegin,
                                    *mMultilineConfig.first->GetContinuePatternReg(),
                                    exception)) {
                 ++rollbackLineFeedCount;
                 endPs = begPs;
             } else if (mMultilineConfig.first->GetEndPatternReg()
-                       && BoostRegexMatch(buffer + lineBegin + begPsOffset,
+                       && BoostRegexMatch(buffer + lineBegin,
                                           endPs - lineBegin,
                                           *mMultilineConfig.first->GetEndPatternReg(),
                                           exception)) {
@@ -2185,7 +2173,7 @@ int32_t LogFileReader::LastMatchedLine(char* buffer,
                     endPs = begPs;
                 }
             } else if (mMultilineConfig.first->GetStartPatternReg()
-                       && BoostRegexMatch(buffer + lineBegin + begPsOffset,
+                       && BoostRegexMatch(buffer + lineBegin,
                                           endPs - lineBegin,
                                           *mMultilineConfig.first->GetStartPatternReg(),
                                           exception)) {

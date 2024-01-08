@@ -30,11 +30,8 @@ public:
         : LogFileReader(hostLogPathDir, hostLogPathFile, devInode, readerConfig, multilineConfig) {}
 
 protected:
-    int32_t LastMatchedLine(char* buffer,
-                            int32_t size,
-                            int32_t& rollbackLineFeedCount,
-                            bool allowRollback = true,
-                            const std::vector<long>& skipBeginPosVec = std::vector<long>()) override;
+    int32_t
+    LastMatchedLine(char* buffer, int32_t size, int32_t& rollbackLineFeedCount, bool allowRollback = true) override;
 
 private:
     bool FindJsonMatch(
