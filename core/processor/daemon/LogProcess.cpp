@@ -228,21 +228,13 @@ void* LogProcess::ProcessLoop(int32_t threadNo) {
             aggregator->FlushReadyBuffer();
         }
 
-        if (threadNo == 0 && curTime - lastUpdateMetricTime >= 2) {
+        if (threadNo == 0 && curTime - lastUpdateMetricTime >= 40) {
             static auto sMonitor = LogtailMonitor::GetInstance();
 
             // atomic counter will be negative if process speed is too fast.
             sMonitor->UpdateMetric("process_tps", 1.0 * s_processCount / (curTime - lastUpdateMetricTime));
             sMonitor->UpdateMetric("process_bytes_ps", 1.0 * s_processBytes / (curTime - lastUpdateMetricTime));
             sMonitor->UpdateMetric("process_lines_ps", 1.0 * s_processLines / (curTime - lastUpdateMetricTime));
-            // 把processBytes写到一个文件里
-            std::string processBytesFile = AppConfig::GetInstance()->GetProcessExecutionDir() + "processBytes.txt";
-            std::ofstream out(processBytesFile, std::ios::app); // 使用追加模式打开文件
-            double processBytes = 1.0 * s_processBytes / (curTime - lastUpdateMetricTime);
-            std::string processBytesStr = std::to_string(processBytes) + "\n";
-            out << processBytesStr;
-            out.close();
-
             lastUpdateMetricTime = curTime;
             s_processCount = 0;
             s_processBytes = 0;
@@ -516,8 +508,6 @@ void LogProcess::FillEventGroupMetadata(LogBuffer& logBuffer, PipelineEventGroup
     eventGroup.SetMetadataNoCopy(EventGroupMetaKey::LOG_FILE_PATH_RESOLVED, logBuffer.logFileReader->GetHostLogPath());
     eventGroup.SetMetadata(EventGroupMetaKey::LOG_FILE_INODE,
                            std::to_string(logBuffer.logFileReader->GetDevInode().inode));
-    eventGroup.SetMetadata(EventGroupMetaKey::LOG_FILE_INODE_DEV,
-                           std::to_string(logBuffer.logFileReader->GetDevInode().dev));
 #ifdef __ENTERPRISE__
     std::string agentTag = EnterpriseConfigProvider::GetInstance()->GetUserDefinedIdSet();
     if (!agentTag.empty()) {

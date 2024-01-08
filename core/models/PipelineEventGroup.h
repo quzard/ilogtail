@@ -39,7 +39,6 @@ enum class EventGroupMetaKey {
     LOG_FILE_PATH,
     LOG_FILE_PATH_RESOLVED,
     LOG_FILE_INODE,
-    LOG_FILE_INODE_DEV,
     LOG_READ_OFFSET,
     LOG_READ_LENGTH,
 

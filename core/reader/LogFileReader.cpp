@@ -1654,12 +1654,12 @@ void LogFileReader::ReadUTF8(LogBuffer& logBuffer, int64_t end, bool& moreData, 
         nbytes += lastCacheSize;
     }
     // Ignore \n if last is force read
-    // if (stringBuffer[0] == '\n' && mLastForceRead) {
-    //     ++stringBuffer;
-    //     ++mLastFilePos;
-    //     logBuffer.readOffset = mLastFilePos;
-    //     --nbytes;
-    // }
+    if (stringBuffer[0] == '\n' && mLastForceRead) {
+        ++stringBuffer;
+        ++mLastFilePos;
+        logBuffer.readOffset = mLastFilePos;
+        --nbytes;
+    }
     const size_t stringBufferLen = nbytes;
     logBuffer.truncateInfo.reset(truncateInfo);
     lastReadPos = mLastFilePos + nbytes; // this doesn't seem right when ulogfs is used and a hole is skipped
@@ -1977,7 +1977,6 @@ LogFileReader::FileCompareResult LogFileReader::CompareToFile(const string& file
         1. xxx\nend\nxxx\n -> xxx\nend
 */
 int32_t LogFileReader::LastMatchedLine(char* buffer, int32_t size, int32_t& rollbackLineFeedCount, bool allowRollback) {
-    return size;
     if (!allowRollback) {
         return size;
     }

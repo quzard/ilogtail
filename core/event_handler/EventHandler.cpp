@@ -1034,8 +1034,6 @@ int32_t ModifyHandler::PushLogToProcessor(LogFileReaderPtr reader, LogBuffer* lo
                                                               reader->GetLastFilePos(),
                                                               time(NULL));
         logBuffer->SetDependecy(reader);
-        // 切分
-        // 把切分好的发送到processor
         while (!LogProcess::GetInstance()->PushBuffer(logBuffer)) // 10ms
         {
             ++pushRetry;
