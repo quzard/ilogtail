@@ -281,7 +281,7 @@ size_t EncodingConverter::ConvertContainerd2Utf8(const char* src,
         }
         if (isPartial == false) {
             newLinePosVec.push_back(linePosVec[i]);
-            skipBeginPosVec.push_back(src-beginSrc);
+            skipBeginPosVec.push_back(destIndexTmp-destIndex);
         }
         for (; src <= originSrc + endIndex; ++src, ++destIndexTmp) {
             if (*src == lineSuffix && isPartial) {
