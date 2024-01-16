@@ -54,19 +54,6 @@ public:
     size_t ConvertGbk2Utf8(
         const char* src, size_t* srcLength, char* des, size_t desLength, const std::vector<long>& linePosVec) const;
 
-    std::string contianerdDelimiter = " "; // 分隔符
-    char contianerdFullTag = 'F'; // 容器全标签
-    char contianerdPartTag = 'P'; // 容器部分标签
-    char lineSuffix = '\n'; // 行后缀
-
-    size_t ConvertContainerd2Utf8(const char* src,
-                                  size_t* srcLength,
-                                  char* des,
-                                  size_t desLength,
-                                  const std::vector<long>& linePosVec,
-                                  std::vector<long>& newLinePosVec,
-                                  std::vector<long>& skipBeginPosVec) const;
-
 #if defined(_MSC_VER)
     // FromUTF8ToACP converts @s encoded in UTF8 to ACP.
     // @return ACP string if convert successfully, otherwise @s will be returned.

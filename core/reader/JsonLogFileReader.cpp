@@ -19,11 +19,8 @@
 using namespace std;
 
 namespace logtail {
-int32_t JsonLogFileReader::LastMatchedLine(char* buffer,
-                                           int32_t size,
-                                           int32_t& rollbackLineFeedCount,
-                                           bool allowRollback,
-                                           const std::vector<long>& skipBeginPosVec) {
+int32_t
+JsonLogFileReader::LastMatchedLine(char* buffer, int32_t size, int32_t& rollbackLineFeedCount, bool allowRollback) {
     int32_t readBytes = 0;
     int32_t endIdx = 0;
     int32_t beginIdx = 0;
