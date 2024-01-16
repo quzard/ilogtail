@@ -316,6 +316,7 @@ func (idf *InputDockerFile) Collect(collector pipeline.Collector) error {
 	idf.avgInstanceMetric.Add(int64(len(dockerInfoDetails)))
 
 	for k, info := range dockerInfoDetails {
+		// 路径匹配
 		sourcePath, containerPath := info.FindBestMatchedPath(idf.LogPath)
 
 		formatSourcePath := formatPath(sourcePath)
