@@ -327,30 +327,43 @@ func isPathSeparator(c byte) bool {
 	return c == '/' || c == '\\'
 }
 
+// DockerInfoDetail 结构体的方法 FindBestMatchedPath
+// 输入一个路径字符串，返回最佳匹配的源路径和容器路径
 func (did *DockerInfoDetail) FindBestMatchedPath(pth string) (sourcePath, containerPath string) {
+	// 使用 path.Clean 函数清理路径，去除多余的 / 和 .
 	pth = path.Clean(pth)
+	// 获取清理后的路径长度
 	pthSize := len(pth)
 
 	// logger.Debugf(context.Background(), "FindBestMatchedPath for container %s, target path: %s, containerInfo: %+v", did.IDPrefix(), pth, did.ContainerInfo)
 
-	// check mounts
+	// 定义一个变量用于存储最佳匹配的挂载点
 	var bestMatchedMounts types.MountPoint
+	// 遍历容器的所有挂载点
 	for _, mount := range did.ContainerInfo.Mounts {
+		// 在这里可以添加日志，记录每个挂载点的详细信息
 		// logger.Debugf("container(%s-%s) mount: source-%s destination-%s", did.IDPrefix(), did.ContainerInfo.Name, mount.Source, mount.Destination)
 
+		// 清理挂载点的目标路径
 		dst := path.Clean(mount.Destination)
+		// 获取清理后的目标路径长度
 		dstSize := len(dst)
 
+		// 如果路径以目标路径为前缀，并且路径长度等于目标路径长度或者路径在目标路径之后的字符是路径分隔符，并且最佳匹配的目标路径长度小于当前目标路径长度
+		// 则更新最佳匹配的挂载点
 		if strings.HasPrefix(pth, dst) &&
 			(pthSize == dstSize || (pthSize > dstSize && isPathSeparator(pth[dstSize]))) &&
 			len(bestMatchedMounts.Destination) < dstSize {
 			bestMatchedMounts = mount
 		}
 	}
+	// 如果找到了最佳匹配的挂载点，则返回其源路径和目标路径
 	if len(bestMatchedMounts.Source) > 0 {
 		return bestMatchedMounts.Source, bestMatchedMounts.Destination
 	}
 
+	// 如果没有找到最佳匹配的挂载点，则返回默认的根路径和空字符串
+	// DefaultRootPath 为UpperDir
 	return did.DefaultRootPath, ""
 }
 
