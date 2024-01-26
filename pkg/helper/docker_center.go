@@ -1186,6 +1186,7 @@ func (dc *DockerCenter) initClient() error {
 	return nil
 }
 
+// 监听docker事件
 func (dc *DockerCenter) eventListener() {
 	errorCount := 0
 	defer dockerCenterRecover()

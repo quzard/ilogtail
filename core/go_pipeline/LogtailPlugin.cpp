@@ -280,6 +280,7 @@ int LogtailPlugin::ExecPluginCmd(
         case PLUGIN_DOCKER_UPDATE_FILE: {
             DockerContainerPathCmd* cmd = new DockerContainerPathCmd(configNameStr, false, paramsStr, false);
             ConfigManager::GetInstance()->UpdateContainerPath(cmd);
+            
         } break;
         case PLUGIN_DOCKER_STOP_FILE: {
             DockerContainerPathCmd* cmd = new DockerContainerPathCmd(configNameStr, true, paramsStr, false);
