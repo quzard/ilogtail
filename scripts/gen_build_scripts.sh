@@ -24,7 +24,7 @@ set -o pipefail
 # e2e: Build plugin dynamic lib with GOC and build the CPP part.
 CATEGORY=$1
 GENERATED_HOME=$2
-VERSION=${3:-1.8.1}
+VERSION=${3:-2.0.0}
 REPOSITORY=${4:-aliyun/ilogtail}
 OUT_DIR=${5:-output}
 EXPORT_GO_ENVS=${6:-${DOCKER_BUILD_EXPORT_GO_ENVS:-true}}
@@ -35,8 +35,8 @@ GO_MOD_FILE=${9:-${GO_MOD_FILE:-go.mod}}
 BUILD_TYPE=${BUILD_TYPE:-Release}
 BUILD_LOGTAIL=${BUILD_LOGTAIL:-ON}
 BUILD_LOGTAIL_UT=${BUILD_LOGTAIL_UT:-OFF}
-ENABLE_COMPATIBLE_MODE=${ENABLE_COMPATIBLE_MODE:-ON}
-ENABLE_STATIC_LINK_CRT=${ENABLE_STATIC_LINK_CRT:-ON}
+ENABLE_COMPATIBLE_MODE=${ENABLE_COMPATIBLE_MODE:-OFF}
+ENABLE_STATIC_LINK_CRT=${ENABLE_STATIC_LINK_CRT:-OFF}
 WITHOUTGDB==${WITHOUTGDB:-OFF}
 BUILD_SCRIPT_FILE=$GENERATED_HOME/gen_build.sh
 COPY_SCRIPT_FILE=$GENERATED_HOME/gen_copy_docker.sh
@@ -114,7 +114,7 @@ function generateCopyScript() {
     fi
   fi
   echo 'echo -e "{\n}" > $BINDIR/ilogtail_config.json' >>$COPY_SCRIPT_FILE
-  echo 'mkdir -p $BINDIR/user_yaml_config.d' >>$COPY_SCRIPT_FILE
+  echo 'mkdir -p $BINDIR/config/local' >>$COPY_SCRIPT_FILE
   echo 'docker rm -v "$id"' >>$COPY_SCRIPT_FILE
 }
 

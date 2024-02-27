@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 2.9)
+cmake_minimum_required(VERSION 3.22)
 project(processor)
 
 if (MSVC)
@@ -20,6 +20,9 @@ if (MSVC)
 endif ()
 
 file(GLOB LIB_SOURCE_FILES *.cpp *.h)
+if (NOT LINUX)
+    list(REMOVE_ITEM LIB_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ProcessorSPL.h ${CMAKE_CURRENT_SOURCE_DIR}/ProcessorSPL.cpp)
+endif ()
 append_source_files(LIB_SOURCE_FILES)
 add_library(${PROJECT_NAME} STATIC ${LIB_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} common)
@@ -35,4 +38,8 @@ target_link_libraries(${PROJECT_NAME} monitor)
 target_link_libraries(${PROJECT_NAME} reader)
 target_link_libraries(${PROJECT_NAME} config_manager)
 target_link_libraries(${PROJECT_NAME} fuse)
+target_link_libraries(${PROJECT_NAME} plugin_interface)
 link_re2(${PROJECT_NAME})
+if (LINUX)
+    target_link_libraries(${PROJECT_NAME} spl)
+endif ()

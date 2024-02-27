@@ -25,6 +25,7 @@
 #include "common/StringTools.h"
 #include "common/FileSystemUtil.h"
 #include "logger/Logger.h"
+#include "file_server/FileDiscoveryOptions.h"
 
 using namespace std;
 #if defined(__linux__)
@@ -267,7 +268,7 @@ void CheckPointManager::LoadFileCheckPoint(const Json::Value& root) {
                 }
                 string path = filePath.substr(0, lastSeparator);
                 string fileName = filePath.substr(lastSeparator + 1, filePath.size() - lastSeparator - 1);
-                std::vector<Config*> allConfig;
+                std::vector<FileDiscoveryConfig> allConfig;
                 if (AppConfig::GetInstance()->IsAcceptMultiConfig()) {
                     ConfigManager::GetInstance()->FindAllMatch(allConfig, path, fileName);
                 } else {
@@ -283,7 +284,7 @@ void CheckPointManager::LoadFileCheckPoint(const Json::Value& root) {
                                                      sigSize,
                                                      sigHash,
                                                      devInode,
-                                                     allConfig[i]->mConfigName,
+                                                     allConfig[i].second->GetConfigName(),
                                                      realFilePath,
                                                      fileOpenFlag != 0,
                                                      containerStopped != 0,
@@ -497,7 +498,7 @@ boost::optional<std::string> SearchFilePathByDevInodeInDirectory(const std::stri
         std::string entName;
         const std::string entPathPrefix = PathJoin(dirPath, "");
         std::string entPath = entPathPrefix;
-        while (ent = dir.ReadNext(false)) {
+        while ((ent = dir.ReadNext(false))) {
             if (findCount++ > INT32_FLAG(checkpoint_find_max_file_count)) {
                 LOG_WARNING(sLogger,
                             METHOD_LOG_PATTERN("exceed max search count", INT32_FLAG(checkpoint_find_max_file_count)));
