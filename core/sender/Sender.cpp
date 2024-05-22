@@ -760,12 +760,12 @@ std::string Sender::GetRegionFromEndpoint(const std::string& endpoint) {
 }
 
 
-LogstoreFeedBackInterface* Sender::GetSenderFeedBackInterface() {
-    return (LogstoreFeedBackInterface*)&mSenderQueue;
+FeedbackInterface* Sender::GetSenderFeedBackInterface() {
+    return (FeedbackInterface*)&mSenderQueue;
 }
 
 
-void Sender::SetFeedBackInterface(LogstoreFeedBackInterface* pProcessInterface) {
+void Sender::SetFeedBackInterface(FeedbackInterface* pProcessInterface) {
     mSenderQueue.SetFeedBackObject(pProcessInterface);
 }
 
@@ -2958,6 +2958,10 @@ const string& Sender::GetDefaultRegion() const {
 void Sender::SetDefaultRegion(const string& region) {
     ScopedSpinLock lock(mDefaultRegionLock);
     mDefaultRegion = region;
+}
+
+SingleLogstoreSenderManager<SenderQueueParam>* Sender::GetSenderQueue(QueueKey key) {
+    return mSenderQueue.GetQueue(key);
 }
 
 } // namespace logtail
