@@ -7,11 +7,11 @@
 
 ## 管控协议
 
-/Agent/Heartbeat?InstanceId=$instance\_id&WaitForChange=(true|false)
+/Agent/HeartBeat?InstanceId=$instance\_id&WaitForChange=(true|false)
 
-### HeartbeatRequest 消息
+### HeartBeatRequest 消息
 
-    message HeartbeatRequest {
+    message HeartBeatRequest {
         bytes request_id = 1;
         uint64 sequence_num = 2;                    // Increment every request, for server to check sync status
         uint64 capabilities = 3;                    // Bitmask of flags defined by AgentCapabilities enum
@@ -25,7 +25,7 @@
         repeated ConfigInfo process_configs = 11;   // Information about the current AGENT_CONFIG held by the Agent
         repeated CommandInfo custom_commands = 12;  // Information about command history
         uint64 flags = 13;                          // Predefined command flag
-        // 14-99 reserved for future official fields
+        // 14-100 reserved for future official fields
     }
     
     message AgentGroupTag {
@@ -79,6 +79,7 @@
         AcceptsCustomCommand           = 0x00000004;
 
         // Add new capabilities here, continuing with the least significant unused bit.
+        // Avoid using bits starting from 2^16.
     }
 
     enum RequestFlags {
@@ -90,9 +91,9 @@
         FullState               = 0x00000001;
     }
 
-### HeartbeatResponse 消息
+### HeartBeatResponse 消息
 
-    message HeartbeatResponse {
+    message HeartBeatResponse {
         bytes request_id = 1;  
         int32 code = 2;      
         string message = 3;     
@@ -101,7 +102,7 @@
         repeated ConfigDetail pipeline_config_updates = 5;  // Agent's pipeline config update status
         repeated ConfigDetail process_config_updates = 6;   // Agent's process config update status
         repeated CommandDetail custom_command_updates = 7;  // Agent's commands updates
-        uint64 flags = 7;                                   // Predefined command flag
+        uint64 flags = 8;                                   // Predefined command flag
     }
     
     message ConfigDetail {
@@ -130,6 +131,7 @@
         RembersCustomCommandStatus         = 0x00000008;
 
         // Add new capabilities here, continuing with the least significant unused bit.
+        // Avoid using bits starting from 2^16.
     }
 
     enum ResponseFlags {
@@ -238,6 +240,6 @@ Server: 如果上报+已知的Agent状态中，缺少应下发的custom\_comman
 
 ### 异常处理
 
-Server: 服务端正常返回时HeartbeatResponse中的code应始终设置为0，而当服务端异常时，必须将HeartbeatResponse中的code设置为非0，HeartbeatResponse中的message应包含错误信息，此时Response中的其他字段必须为空。
+Server: 服务端正常返回时HeartBeatResponse中的code应始终设置为0，而当服务端异常时，必须将HeartBeatResponse中的code设置为非0，HeartBeatResponse中的message应包含错误信息，此时Response中的其他字段必须为空。
 
-Client: 当HeartbeatResponse中的code为0时，Agent应该正常处理下发的配置。当HeartbeatResponse中的code不为0时，Agent必须忽略除code和message外的其他字段，并择机重试。
+Client: 当HeartBeatResponse中的code为0时，Agent应该正常处理下发的配置。当HeartBeatResponse中的code不为0时，Agent必须忽略除code和message外的其他字段，并择机重试。

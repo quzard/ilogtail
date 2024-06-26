@@ -46,6 +46,10 @@ public:
     void SetPipelineManager(const PipelineManager* pm) { mPipelineManager = pm; }
     void ClearEnvironment();
 
+    // void 
+    // void 
+    // void 
+
 private:
     ConfigWatcher();
     ~ConfigWatcher() = default;
