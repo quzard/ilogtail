@@ -76,6 +76,9 @@ public:
     virtual void FeedbackPipelineConfigStatus(std::string name, ConfigInfo status);
     virtual void FeedbackCommandStatus(std::string type, std::string name, CommandInfo status);
 
+    CommonConfigProvider() = default;
+    ~CommonConfigProvider() = default;
+
 protected:
     virtual void SendHeartBeatAndFetchConfig();
     virtual std::string FetchProcessConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap);
@@ -94,9 +97,6 @@ private:
         std::string host;
         std::int32_t port;
     };
-
-    CommonConfigProvider() = default;
-    ~CommonConfigProvider() = default;
 
     ConfigServerAddress GetOneConfigServerAddress(bool changeConfigServer);
     const std::unordered_map<std::string, std::string>& GetConfigServerTags() const { return mConfigServerTags; }
