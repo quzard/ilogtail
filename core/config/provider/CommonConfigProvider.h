@@ -92,8 +92,9 @@ protected:
 
     virtual void CheckUpdateThread();
     virtual void GetConfigUpdate();
-    virtual void GetConfigServerAvailable() { return mConfigServerAvailable; }
-    virtual void StopUsingConfigServer() { mConfigServerAvailable = false; }
+    
+    void GetConfigServerAvailable() { return mConfigServerAvailable; }
+    void StopUsingConfigServer() { mConfigServerAvailable = false; }
 
     int32_t mStartTime;
     std::future<void> mThreadRes;
