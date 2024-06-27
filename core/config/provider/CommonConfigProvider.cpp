@@ -40,9 +40,10 @@ DEFINE_FLAG_INT32(heartBeat_update_interval, "second", 10);
 
 namespace logtail {
 
-const string CommonConfigProvider::sName = "common config provider";
 
 void CommonConfigProvider::Init(const string& dir) {
+    string sName = "CommonConfigProvider";
+
     ConfigProvider::Init(dir);
 
     mSequenceNum = 0;

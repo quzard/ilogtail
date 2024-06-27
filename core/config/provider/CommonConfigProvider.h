@@ -52,7 +52,7 @@ struct CommandInfo {
 
 class CommonConfigProvider : public ConfigProvider {
 public:
-    static const std::string sName;
+    std::string sName;
 
     std::filesystem::path mSourceDir;
     mutable std::mutex mMux;
