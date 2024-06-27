@@ -55,7 +55,6 @@ enum AgentCapabilities {
     AcceptsCustomCommand           = 0x00000004;
 
     // Add new capabilities here, continuing with the least significant unused bit.
-    // Avoid using bits starting from 2^16.
 }
 
 enum RequestFlags {
@@ -86,7 +85,7 @@ message HeartBeatRequest {
     repeated CommandInfo custom_commands = 12;  // Information about command history
     uint64 flags = 13;                          // Predefined command flag
     bytes opaque = 14;                          // Opaque data for extension
-    // before 100 (inclusive) are reserved for future official fields}
+    // before 100 (inclusive) are reserved for future official fields
 }
 
 // Define Config's detail
@@ -139,7 +138,7 @@ enum ResponseFlags {
 }
 
 // ConfigServer's response to Agent's request
-message HeartbeatResponse {
+message HeartBeatResponse {
     bytes request_id = 1;  
     ServerErrorResponse error_response = 2;             // Set value indicates error
     uint64 capabilities = 3;                            // Bitmask of flags defined by ServerCapabilities enum

@@ -295,7 +295,7 @@ string CommonConfigProvider::SendHeartBeat()
     configserver::proto::v2::HeartBeatResponse emptyResult;
     string emptyResultString;
     emptyResult.SerializeToString(&emptyResultString);
-    SendHttpRequest(operation, reqBody, emptyResultString, "SendHeartBeat");
+    return SendHttpRequest(operation, reqBody, emptyResultString, "SendHeartBeat");
 }
 
 string CommonConfigProvider::SendHttpRequest(const string& operation,
@@ -347,7 +347,7 @@ string CommonConfigProvider::FetchConfig(const unordered_map<string, ConfigInfo>
     configserver::proto::v2::FetchConfigResponse emptyResult;
     string emptyResultString;
     emptyResult.SerializeToString(&emptyResultString);
-    SendHttpRequest(operation, reqBody, emptyResultString, configType);
+    return SendHttpRequest(operation, reqBody, emptyResultString, configType);
 }
 
 string CommonConfigProvider::FetchPipelineConfig(const unordered_map<string, ConfigInfo>& configInfoMap)
