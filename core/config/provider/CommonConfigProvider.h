@@ -90,10 +90,10 @@ protected:
     virtual void GetAgentAttributes(std::unordered_map<std::string, std::string>& lastAttributes);
     virtual void UpdateRemoteConfig(const std::string& fetchConfigResponse);
 
-    void CheckUpdateThread();
-    void GetConfigUpdate();
-    bool GetConfigServerAvailable() { return mConfigServerAvailable; }
-    void StopUsingConfigServer() { mConfigServerAvailable = false; }
+    virtual void CheckUpdateThread();
+    virtual void GetConfigUpdate();
+    virtual void GetConfigServerAvailable() { return mConfigServerAvailable; }
+    virtual void StopUsingConfigServer() { mConfigServerAvailable = false; }
 
     int32_t mStartTime;
     std::future<void> mThreadRes;
