@@ -84,7 +84,7 @@ protected:
     virtual std::string FetchProcessConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap);
     virtual std::string FetchPipelineConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap);
     
-    std::string GetInstanceId();
+    virtual std::string GetInstanceId();
     virtual void GetAgentAttributes(std::unordered_map<std::string, std::string>& lastAttributes);
     virtual void UpdateRemoteConfig(const std::string& fetchConfigResponse);
 
