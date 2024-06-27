@@ -88,6 +88,14 @@ protected:
     virtual void GetAgentAttributes(std::unordered_map<std::string, std::string>& lastAttributes);
     virtual void UpdateRemoteConfig(const std::string& fetchConfigResponse);
 
+    int32_t mStartTime;
+    std::future<void> mThreadRes;
+    mutable std::mutex mThreadRunningMux;
+    bool mIsThreadRunning = true;
+    mutable std::condition_variable mStopCV;
+    std::unordered_map<std::string, int64_t> mConfigNameVersionMap;
+    bool mConfigServerAvailable = false;
+
 private:
     struct ConfigServerAddress {
         ConfigServerAddress() = default;
@@ -117,14 +125,6 @@ private:
     int mConfigServerAddressId = 0;
     std::unordered_map<std::string, std::string> mConfigServerTags;
 
-    int32_t mStartTime;
-
-    std::future<void> mThreadRes;
-    mutable std::mutex mThreadRunningMux;
-    bool mIsThreadRunning = true;
-    mutable std::condition_variable mStopCV;
-    std::unordered_map<std::string, int64_t> mConfigNameVersionMap;
-    bool mConfigServerAvailable = false;
 };
 
 } // namespace logtail
