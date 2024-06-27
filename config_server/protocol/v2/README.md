@@ -25,7 +25,8 @@
         repeated ConfigInfo process_configs = 11;   // Information about the current AGENT_CONFIG held by the Agent
         repeated CommandInfo custom_commands = 12;  // Information about command history
         uint64 flags = 13;                          // Predefined command flag
-        // 14-100 reserved for future official fields
+        bytes opaque = 14;                          // Opaque data for extension
+        // before 100 (inclusive) are reserved for future official fields
     }
     
     message AgentGroupTag {
@@ -64,8 +65,8 @@
         bytes version = 1;                 // Agent's version
         bytes ip = 2;                      // Agent's ip
         bytes hostname = 3;                // Agent's hostname
-        // 4-99 reserved for future official fields
         map<string, bytes> extras = 100;   // Agent's other attributes
+        // before 100 (inclusive) are reserved for future official fields
     }
 
     enum AgentCapabilities {
@@ -78,8 +79,7 @@
         // The Agent can accept custom command from the Server.
         AcceptsCustomCommand           = 0x00000004;
 
-        // Add new capabilities here, continuing with the least significant unused bit.
-        // Avoid using bits starting from 2^16.
+        // bits before 2^16 (inclusive) are reserved for future official fields
     }
 
     enum RequestFlags {
@@ -89,20 +89,21 @@
 
         // Must be set if this request contains full state
         FullState               = 0x00000001;
+        // bits before 2^16 (inclusive) are reserved for future official fields
     }
 
 ### HeartBeatResponse 消息
 
     message HeartBeatResponse {
         bytes request_id = 1;  
-        int32 code = 2;      
-        string message = 3;     
-        uint64 capabilities = 4;                            // Bitmask of flags defined by ServerCapabilities enum
+        ServerErrorResponse error_response = 2;             // Set value indicates error
+        uint64 capabilities = 3;                            // Bitmask of flags defined by ServerCapabilities enum
 
-        repeated ConfigDetail pipeline_config_updates = 5;  // Agent's pipeline config update status
-        repeated ConfigDetail process_config_updates = 6;   // Agent's process config update status
-        repeated CommandDetail custom_command_updates = 7;  // Agent's commands updates
-        uint64 flags = 8;                                   // Predefined command flag
+        repeated ConfigDetail pipeline_config_updates = 4;  // Agent's pipeline config update status
+        repeated ConfigDetail process_config_updates = 5;   // Agent's process config update status
+        repeated CommandDetail custom_command_updates = 6;  // Agent's commands updates
+        uint64 flags = 7;                                   // Predefined command flag
+        bytes opaque = 8;                                   // Opaque data for extension
     }
     
     message ConfigDetail {
@@ -130,8 +131,12 @@
         // The Server can remember custom command status.
         RembersCustomCommandStatus         = 0x00000008;
 
-        // Add new capabilities here, continuing with the least significant unused bit.
-        // Avoid using bits starting from 2^16.
+        // bits before 2^16 (inclusive) are reserved for future official fields
+    }
+
+    message ServerErrorResponse {
+        int32 error_code = 1;                               // None-zero value indicates error
+        string error_message = 2;                           // Error message
     }
 
     enum ResponseFlags {
@@ -146,6 +151,7 @@
         ReportFullState           = 0x00000001;
         FetchPipelineConfigDetail = 0x00000002;
         FetchProcessConfigDetail  = 0x00000004;
+        // bits before 2^16 (inclusive) are reserved for future official fields
     }
 
 ## 行为规范
