@@ -72,9 +72,9 @@ public:
     void Init(const std::string& dir) override;
     void Stop() override;
 
-    virtual void FeedbackProcessConfigStatus(std::string name, ConfigInfo status);
-    virtual void FeedbackPipelineConfigStatus(std::string name, ConfigInfo status);
-    virtual void FeedbackCommandStatus(std::string type, std::string name, CommandInfo status);
+    // virtual void FeedbackProcessConfigStatus(std::string name, ConfigInfo status);
+    // virtual void FeedbackPipelineConfigStatus(std::string name, ConfigInfo status);
+    // virtual void FeedbackCommandStatus(std::string type, std::string name, CommandInfo status);
 
     CommonConfigProvider() = default;
     ~CommonConfigProvider() = default;
