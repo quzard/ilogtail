@@ -78,6 +78,8 @@ public:
 
 protected:
     virtual void SendHeartBeatAndFetchConfig();
+    virtual std::string FetchProcessConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap);
+    virtual std::string FetchPipelineConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap);
     std::string GetInstanceId();
     void GetAgentAttributes(std::unordered_map<std::string, std::string>& lastAttributes);
     void UpdateRemoteConfig(const std::string& fetchConfigResponse);
@@ -104,8 +106,6 @@ private:
     void StopUsingConfigServer() { mConfigServerAvailable = false; }
 
     std::string FetchConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap, std::string configType);
-    std::string FetchProcessConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap);
-    std::string FetchPipelineConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap);
     std::string SendHeartBeat();
     std::string SendHttpRequest(const std::string& operation,
                            const std::string& reqBody,

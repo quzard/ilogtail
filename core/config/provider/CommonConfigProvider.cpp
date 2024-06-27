@@ -233,15 +233,15 @@ void CommonConfigProvider::SendHeartBeatAndFetchConfig()
 
 string CommonConfigProvider::SendHeartBeat()
 {
-    configserver::proto::v2::HeartBeatRequest HeartBeatReq;
+    configserver::proto::v2::HeartBeatRequest heartBeatReq;
     string requestID = sdk::Base64Enconde(string("HeartBeat").append(to_string(time(NULL))));
-    HeartBeatReq.set_request_id(requestID);
-    HeartBeatReq.set_sequence_num(mSequenceNum);
-    HeartBeatReq.set_capabilities(configserver::proto::v2::AcceptsProcessConfig
+    heartBeatReq.set_request_id(requestID);
+    heartBeatReq.set_sequence_num(mSequenceNum);
+    heartBeatReq.set_capabilities(configserver::proto::v2::AcceptsProcessConfig
                                       | configserver::proto::v2::AcceptsPipelineConfig);
-    HeartBeatReq.set_instance_id(GetInstanceId());
-    HeartBeatReq.set_agent_type("LoongCollector");
-    auto attributes = HeartBeatReq.mutable_attributes();
+    heartBeatReq.set_instance_id(GetInstanceId());
+    heartBeatReq.set_agent_type("LoongCollector");
+    auto attributes = heartBeatReq.mutable_attributes();
     for (const auto& it : mAttributes) {
         if (it.first == "hostname") {
             attributes->set_hostname(it.second);
@@ -257,22 +257,22 @@ string CommonConfigProvider::SendHeartBeat()
     }
 
     for (auto tag : GetConfigServerTags()) {
-        configserver::proto::v2::AgentGroupTag *agentGroupTag = HeartBeatReq.add_tags();
+        configserver::proto::v2::AgentGroupTag *agentGroupTag = heartBeatReq.add_tags();
         agentGroupTag->set_name(tag.first);
         agentGroupTag->set_value(tag.second);
     }
-    HeartBeatReq.set_running_status("running");
-    HeartBeatReq.set_startup_time(mStartTime);
+    heartBeatReq.set_running_status("running");
+    heartBeatReq.set_startup_time(mStartTime);
 
     for (const auto& configInfo : mPipelineConfigInfoMap) {
-        addConfigInfoToRequest(configInfo, HeartBeatReq.add_pipeline_configs());
+        addConfigInfoToRequest(configInfo, heartBeatReq.add_pipeline_configs());
     }
     for (const auto& configInfo : mProcessConfigInfoMap) {
-        addConfigInfoToRequest(configInfo, HeartBeatReq.add_process_configs());
+        addConfigInfoToRequest(configInfo, heartBeatReq.add_process_configs());
     }
 
     for (auto &configInfo : mCommandInfoMap) {
-        configserver::proto::v2::CommandInfo *command = HeartBeatReq.add_custom_commands();
+        configserver::proto::v2::CommandInfo *command = heartBeatReq.add_custom_commands();
         command->set_type(configInfo.second.type);
         command->set_name(configInfo.second.name);
         switch (configInfo.second.status) {
@@ -291,7 +291,7 @@ string CommonConfigProvider::SendHeartBeat()
     string operation = sdk::CONFIGSERVERAGENT;
     operation.append("/").append("HeartBeat");
     string reqBody;
-    HeartBeatReq.SerializeToString(&reqBody);
+    heartBeatReq.SerializeToString(&reqBody);
     configserver::proto::v2::HeartBeatResponse emptyResult;
     string emptyResultString;
     emptyResult.SerializeToString(&emptyResultString);
