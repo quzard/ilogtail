@@ -72,17 +72,18 @@ public:
     void Init(const std::string& dir) override;
     void Stop() override;
 
-    void FeedbackProcessConfigStatus(std::string name, ConfigInfo status);
-    void FeedbackPipelineConfigStatus(std::string name, ConfigInfo status);
-    void FeedbackCommandStatus(std::string type, std::string name, CommandInfo status);
+    virtual void FeedbackProcessConfigStatus(std::string name, ConfigInfo status);
+    virtual void FeedbackPipelineConfigStatus(std::string name, ConfigInfo status);
+    virtual void FeedbackCommandStatus(std::string type, std::string name, CommandInfo status);
 
 protected:
     virtual void SendHeartBeatAndFetchConfig();
     virtual std::string FetchProcessConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap);
     virtual std::string FetchPipelineConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap);
+    
     std::string GetInstanceId();
-    void GetAgentAttributes(std::unordered_map<std::string, std::string>& lastAttributes);
-    void UpdateRemoteConfig(const std::string& fetchConfigResponse);
+    virtual void GetAgentAttributes(std::unordered_map<std::string, std::string>& lastAttributes);
+    virtual void UpdateRemoteConfig(const std::string& fetchConfigResponse);
 
 private:
     struct ConfigServerAddress {
