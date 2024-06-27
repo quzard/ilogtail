@@ -40,6 +40,8 @@ DEFINE_FLAG_INT32(heartBeat_update_interval, "second", 10);
 
 namespace logtail {
 
+const string CommonConfigProvider::sName = "common config provider";
+
 void CommonConfigProvider::Init(const string& dir) {
     ConfigProvider::Init(dir);
 
@@ -96,14 +98,14 @@ void CommonConfigProvider::Stop() {
     mStopCV.notify_one();
     future_status s = mThreadRes.wait_for(chrono::seconds(1));
     if (s == future_status::ready) {
-        LOG_INFO(sLogger, ("common config provider", "stopped successfully"));
+        LOG_INFO(sLogger, (sName, "stopped successfully"));
     } else {
-        LOG_WARNING(sLogger, ("common config provider", "forced to stopped"));
+        LOG_WARNING(sLogger, (sName, "forced to stopped"));
     }
 }
 
 void CommonConfigProvider::CheckUpdateThread() {
-    LOG_INFO(sLogger, ("common config provider", "started"));
+    LOG_INFO(sLogger, (sName, "started"));
     usleep((rand() % 10) * 100 * 1000);
     int32_t lastCheckTime = 0;
     unique_lock<mutex> lock(mThreadRunningMux);

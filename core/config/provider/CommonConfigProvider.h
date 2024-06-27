@@ -52,6 +52,8 @@ struct CommandInfo {
 
 class CommonConfigProvider : public ConfigProvider {
 public:
+    static const std::string sName;
+
     std::filesystem::path mSourceDir;
     mutable std::mutex mMux;
     std::unordered_map<std::string, ConfigInfo> mPipelineConfigInfoMap;
@@ -88,6 +90,11 @@ protected:
     virtual void GetAgentAttributes(std::unordered_map<std::string, std::string>& lastAttributes);
     virtual void UpdateRemoteConfig(const std::string& fetchConfigResponse);
 
+    void CheckUpdateThread();
+    void GetConfigUpdate();
+    bool GetConfigServerAvailable() { return mConfigServerAvailable; }
+    void StopUsingConfigServer() { mConfigServerAvailable = false; }
+
     int32_t mStartTime;
     std::future<void> mThreadRes;
     mutable std::mutex mThreadRunningMux;
@@ -109,10 +116,6 @@ private:
     ConfigServerAddress GetOneConfigServerAddress(bool changeConfigServer);
     const std::unordered_map<std::string, std::string>& GetConfigServerTags() const { return mConfigServerTags; }
 
-    void CheckUpdateThread();
-    void GetConfigUpdate();
-    bool GetConfigServerAvailable() { return mConfigServerAvailable; }
-    void StopUsingConfigServer() { mConfigServerAvailable = false; }
 
     std::string FetchConfig(const std::unordered_map<std::string, ConfigInfo>& configInfoMap, std::string configType);
     std::string SendHeartBeat();
