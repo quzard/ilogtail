@@ -15,11 +15,11 @@
  */
 
 #pragma once
-#include <rapidjson/document.h>
-#include <rapidjson/rapidjson.h>
-
 #include <string>
 #include <unordered_set>
+
+#include "rapidjson/document.h"
+#include "rapidjson/rapidjson.h"
 
 namespace logtail {
 

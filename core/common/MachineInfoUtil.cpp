@@ -617,33 +617,42 @@ ECSMeta FetchECSMeta() {
         curl_easy_setopt(curl, CURLOPT_URL, "http://100.100.100.200/latest/dynamic/instance-identity/document");
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &meta);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, FetchECSMetaCallback);
-        CURLcode res = curl_easy_perform(curl);
-        if (res != CURLE_OK) {
-            LOG_WARNING(sLogger, ("fetch ecs meta fail", curl_easy_strerror(res)));
-        } else {
-            rapidjson::Document doc;
-            doc.Parse(meta.c_str());
-            if (doc.HasParseError() || !doc.IsObject()) {
-                LOG_WARNING(sLogger, ("fetch ecs meta fail", meta));
-            } else {
-                rapidjson::Value::ConstMemberIterator instanceItr = doc.FindMember("instance-id");
-                if (instanceItr != doc.MemberEnd() && (instanceItr->value.IsString())) {
-                    metaObj.instanceID = instanceItr->value.GetString();
-                }
+        size_t retryTimes = 1;
+        while (retryTimes <= 3) {
+            CURLcode res = curl_easy_perform(curl);
+            if (res == CURLE_OK) {
+                rapidjson::Document doc;
+                doc.Parse(meta.c_str());
+                if (doc.HasParseError() || !doc.IsObject()) {
+                    LOG_WARNING(sLogger, ("fetch ecs meta fail", meta));
+                } else {
+                    rapidjson::Value::ConstMemberIterator instanceItr = doc.FindMember("instance-id");
+                    if (instanceItr != doc.MemberEnd() && (instanceItr->value.IsString())) {
+                        metaObj.instanceID = instanceItr->value.GetString();
+                    }
 
-                rapidjson::Value::ConstMemberIterator userItr = doc.FindMember("owner-account-id");
-                if (userItr != doc.MemberEnd() && userItr->value.IsString()) {
-                    metaObj.userID = userItr->value.GetString();
+                    rapidjson::Value::ConstMemberIterator userItr = doc.FindMember("owner-account-id");
+                    if (userItr != doc.MemberEnd() && userItr->value.IsString()) {
+                        metaObj.userID = userItr->value.GetString();
+                    }
+                    if (auto itr = doc.FindMember("region-id"); itr != doc.MemberEnd() && itr->value.IsString()) {
+                        metaObj.regionID = itr->value.GetString();
+                    }
                 }
-
-                rapidjson::Value::ConstMemberIterator regionItr = doc.FindMember("region-id");
-                if (regionItr != doc.MemberEnd() && regionItr->value.IsString()) {
-                    metaObj.regionID = regionItr->value.GetString();
-                }
+                break;
             }
+            LOG_WARNING(sLogger,
+                        ("fetch ecs meta fail, retrying...", curl_easy_strerror(res))("retry times", retryTimes));
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            retryTimes++;
+        }
+        if (retryTimes > 3) {
+            LOG_INFO(sLogger, ("fetch ecs meta", "success"));
+        } else {
+            LOG_WARNING(sLogger, ("fetch ecs meta fail, retry times", retryTimes));
         }
         curl_easy_cleanup(curl);
         return metaObj;
