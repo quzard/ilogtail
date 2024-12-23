@@ -626,7 +626,7 @@ ECSMeta FetchECSMeta() {
                 rapidjson::Document doc;
                 doc.Parse(meta.c_str());
                 if (doc.HasParseError() || !doc.IsObject()) {
-                    LOG_DEBUG(sLogger, ("fetch ecs meta fail", meta));
+                    LOG_WARNING(sLogger, ("fetch ecs meta fail", meta));
                 } else {
                     rapidjson::Value::ConstMemberIterator instanceItr = doc.FindMember("instance-id");
                     if (instanceItr != doc.MemberEnd() && (instanceItr->value.IsString())) {
@@ -647,9 +647,10 @@ ECSMeta FetchECSMeta() {
             }
             LOG_WARNING(sLogger,
                         ("fetch ecs meta fail, retrying...", curl_easy_strerror(res))("retry times", retryTimes));
-            if (retryTimes < 10) {
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        if (retryTimes > 5) {
+            LOG_WARNING(sLogger, ("fetch ecs meta fail, retry times", retryTimes));
         }
         curl_easy_cleanup(curl);
         return metaObj;
