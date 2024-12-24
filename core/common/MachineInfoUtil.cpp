@@ -596,12 +596,12 @@ ECSMeta FetchECSMeta() {
     static std::mutex mutex;
     std::lock_guard<std::mutex> lock(mutex);
     static ECSMeta metaObj;
-    static bool isFetching = false;
-    if (isFetching) {
+    static bool initialized = false;
+    if (initialized) {
         return metaObj;
     }
-    isFetching = true;
-    CURL* curl;
+    initialized = true;
+    CURL* curl = nullptr;
     for (size_t retryTimes = 1; retryTimes <= 5; retryTimes++) {
         curl = curl_easy_init();
         if (curl) {
@@ -609,57 +609,89 @@ ECSMeta FetchECSMeta() {
         }
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-    metaObj.instanceID = "";
-    metaObj.userID = "";
-    metaObj.regionID = "";
-    if (curl) {
-        std::string meta;
-        curl_easy_setopt(curl, CURLOPT_URL, "http://100.100.100.200/latest/dynamic/instance-identity/document");
+    if (!curl) {
+        LOG_WARNING(sLogger,
+                    ("curl handler cannot be initialized during user environment identification",
+                     "ecs meta may be mislabeled"));
+        return metaObj;
+    }
+    for (size_t retryTimes = 1; retryTimes <= 3; retryTimes++) {
+        // Get token first
+        std::string token;
+        auto* tokenHeaders = curl_slist_append(nullptr, "X-aliyun-ecs-metadata-token-ttl-seconds:3600");
+        if (!tokenHeaders) {
+            curl_easy_cleanup(curl);
+            return metaObj;
+        }
+        curl_easy_setopt(curl, CURLOPT_URL, "http://100.100.100.200/latest/api/token");
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, tokenHeaders);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &token);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, FetchECSMetaCallback);
+
+        CURLcode res = curl_easy_perform(curl);
+        curl_slist_free_all(tokenHeaders);
+
+        if (res != CURLE_OK) {
+            LOG_WARNING(sLogger, ("fetch ecs token fail", curl_easy_strerror(res)));
+            continue;
+        }
+
+        // Get metadata with token
+        std::string meta;
+        auto* metaHeaders = curl_slist_append(nullptr, ("X-aliyun-ecs-metadata-token: " + token).c_str());
+        if (!metaHeaders) {
+            continue;
+        }
+
+        curl_easy_reset(curl);
+        curl_easy_setopt(curl, CURLOPT_URL, "http://100.100.100.200/latest/dynamic/instance-identity/document");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, metaHeaders);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &meta);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, FetchECSMetaCallback);
-        size_t retryTimes = 1;
-        while (retryTimes <= 3) {
-            CURLcode res = curl_easy_perform(curl);
-            if (res == CURLE_OK) {
-                rapidjson::Document doc;
-                doc.Parse(meta.c_str());
-                if (doc.HasParseError() || !doc.IsObject()) {
-                    LOG_WARNING(sLogger, ("fetch ecs meta fail", meta));
-                } else {
-                    rapidjson::Value::ConstMemberIterator instanceItr = doc.FindMember("instance-id");
-                    if (instanceItr != doc.MemberEnd() && (instanceItr->value.IsString())) {
-                        metaObj.instanceID = instanceItr->value.GetString();
-                    }
 
-                    rapidjson::Value::ConstMemberIterator userItr = doc.FindMember("owner-account-id");
-                    if (userItr != doc.MemberEnd() && userItr->value.IsString()) {
-                        metaObj.userID = userItr->value.GetString();
-                    }
-                    if (auto itr = doc.FindMember("region-id"); itr != doc.MemberEnd() && itr->value.IsString()) {
-                        metaObj.regionID = itr->value.GetString();
-                    }
-                }
-                break;
-            }
-            LOG_WARNING(sLogger,
-                        ("fetch ecs meta fail, retrying...", curl_easy_strerror(res))("retry times", retryTimes));
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            retryTimes++;
+        res = curl_easy_perform(curl);
+        curl_slist_free_all(metaHeaders);
+
+        if (res != CURLE_OK) {
+            LOG_WARNING(sLogger, ("fetch ecs meta fail", curl_easy_strerror(res)));
+            continue;
         }
-        if (retryTimes > 3) {
-            LOG_INFO(sLogger, ("fetch ecs meta", "success"));
-        } else {
-            LOG_WARNING(sLogger, ("fetch ecs meta fail, retry times", retryTimes));
+
+        rapidjson::Document doc;
+        doc.Parse(meta.c_str());
+        if (doc.HasParseError() || !doc.IsObject()) {
+            LOG_WARNING(sLogger, ("fetch ecs meta fail", meta));
+            continue;
         }
+
+        if (const auto instanceItr = doc.FindMember("instance-id");
+            instanceItr != doc.MemberEnd() && instanceItr->value.IsString()) {
+            metaObj.instanceID = instanceItr->value.GetString();
+        }
+
+        if (const auto userItr = doc.FindMember("owner-account-id");
+            userItr != doc.MemberEnd() && userItr->value.IsString()) {
+            metaObj.userID = userItr->value.GetString();
+        }
+
+        if (const auto regionItr = doc.FindMember("region-id");
+            regionItr != doc.MemberEnd() && regionItr->value.IsString()) {
+            metaObj.regionID = regionItr->value.GetString();
+        }
+
         curl_easy_cleanup(curl);
         return metaObj;
     }
-    LOG_WARNING(
-        sLogger,
-        ("curl handler cannot be initialized during user environment identification", "ecs meta may be mislabeled"));
+
+    curl_easy_cleanup(curl);
+    LOG_WARNING(sLogger, ("failed to fetch ecs metadata after retries", "ecs meta may be mislabeled"));
     return metaObj;
 }
 
