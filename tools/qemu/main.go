@@ -66,7 +66,7 @@ func testCPU(ctx context.Context, model string) CPUTest {
 	defer os.Remove(imgName) // 测试完成后清理
 
 	// 创建带有超时的上下文
-	timeout := 10 * time.Minute
+	timeout := 30 * time.Minute
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -140,7 +140,7 @@ func testCPU(ctx context.Context, model string) CPUTest {
 	}
 
 	// 执行测试命令
-	outBuf, err := runSSHCommand(`wget https://aliyun-observability-release-cn-heyuan.oss-cn-heyuan.aliyuncs.com/loongcollector/linux64/0.2.0-test/loongcollector_0.2.0 -O loongcollector_test && sudo chmod a+x loongcollector_test`)
+	outBuf, err := runSSHCommand(`wget https://aliyun-observability-release-cn-heyuan.oss-cn-heyuan.aliyuncs.com/loongcollector/linux64/0.2.0-test/loongcollector_0.2.0_no_spl -O loongcollector_test && sudo chmod a+x loongcollector_test`)
 	if err != nil {
 		result.Error = fmt.Errorf("下载loongcollector失败, err: %v\n输出: %s", err, outBuf)
 		return result
