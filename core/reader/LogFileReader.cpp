@@ -2405,12 +2405,8 @@ LineInfo ContainerdTextParser::NewGetLastLine(StringView buffer,
 
         LineInfo line;
         parseLine(rawLine, line);
-        // containerd 不需要外层协议的 dataRaw
-        finalLine.data = line.data;
-        finalLine.fullLine = line.fullLine;
-        finalLine.lineBegin = line.lineBegin;
-        finalLine.rollbackLineFeedCount += line.rollbackLineFeedCount;
-        finalLine.lineEnd = line.lineEnd;
+        line.rollbackLineFeedCount += finalLine.rollbackLineFeedCount;
+        finalLine = std::move(line);
         mergeLines(finalLine, finalLine, true);
         if (!finalLine.fullLine) {
             if (finalLine.lineBegin == 0) {
