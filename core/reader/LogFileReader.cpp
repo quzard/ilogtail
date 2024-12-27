@@ -2050,6 +2050,7 @@ LogFileReader::RemoveLastIncompleteLog(char* buffer, int32_t size, int32_t& roll
                                          content.data.size(),
                                          *mMultilineConfig.first->GetEndPatternReg(),
                                          exception)) {
+                        rollbackLineFeedCount += content.forceRollbackLineFeedCount;
                         // Ensure the end line is complete
                         if (buffer[content.lineEnd] == '\n') {
                             return content.lineEnd + 1;
@@ -2061,10 +2062,12 @@ LogFileReader::RemoveLastIncompleteLog(char* buffer, int32_t size, int32_t& roll
                                                *mMultilineConfig.first->GetStartPatternReg(),
                                                exception)) {
                     // start + continue, start
+                    rollbackLineFeedCount += content.forceRollbackLineFeedCount;
                     rollbackLineFeedCount += content.rollbackLineFeedCount;
                     // Keep all the buffer if rollback all
                     return content.lineBegin;
                 }
+                rollbackLineFeedCount += content.forceRollbackLineFeedCount;
                 rollbackLineFeedCount += content.rollbackLineFeedCount;
                 endPs = content.lineBegin - 1;
             }
@@ -2280,10 +2283,20 @@ LineInfo RawTextParser::NewGetLastLine(StringView buffer,
                                        bool needSingleLine,
                                        std::vector<BaseLineParse*>* lineParsers) {
     if (end == 0) {
-        return {.data = StringView(), .lineBegin = 0, .lineEnd = 0, .rollbackLineFeedCount = 0, .fullLine = false};
+        return {.data = StringView(),
+                .lineBegin = 0,
+                .lineEnd = 0,
+                .rollbackLineFeedCount = 0,
+                .fullLine = false,
+                .forceRollbackLineFeedCount = 0};
     }
     if (protocolFunctionIndex != 0) {
-        return {.data = StringView(), .lineBegin = 0, .lineEnd = 0, .rollbackLineFeedCount = 0, .fullLine = false};
+        return {.data = StringView(),
+                .lineBegin = 0,
+                .lineEnd = 0,
+                .rollbackLineFeedCount = 0,
+                .fullLine = false,
+                .forceRollbackLineFeedCount = 0};
     }
 
     for (int32_t begin = end; begin > 0; --begin) {
@@ -2292,14 +2305,16 @@ LineInfo RawTextParser::NewGetLastLine(StringView buffer,
                     .lineBegin = begin,
                     .lineEnd = end,
                     .rollbackLineFeedCount = 1,
-                    .fullLine = true};
+                    .fullLine = true,
+                    .forceRollbackLineFeedCount = 0};
         }
     }
     return {.data = StringView(buffer.data(), end),
             .lineBegin = 0,
             .lineEnd = end,
             .rollbackLineFeedCount = 1,
-            .fullLine = true};
+            .fullLine = true,
+            .forceRollbackLineFeedCount = 0};
 }
 
 LineInfo DockerJsonFileParser::NewGetLastLine(StringView buffer,
@@ -2308,11 +2323,21 @@ LineInfo DockerJsonFileParser::NewGetLastLine(StringView buffer,
                                               bool needSingleLine,
                                               std::vector<BaseLineParse*>* lineParsers) {
     if (end == 0) {
-        return {.data = StringView(), .lineBegin = 0, .lineEnd = 0, .rollbackLineFeedCount = 0, .fullLine = false};
+        return {.data = StringView(),
+                .lineBegin = 0,
+                .lineEnd = 0,
+                .rollbackLineFeedCount = 0,
+                .fullLine = false,
+                .forceRollbackLineFeedCount = 0};
     }
     if (protocolFunctionIndex == 0) {
         // 异常情况, DockerJsonFileParse不允许在最后一个解析器
-        return {.data = StringView(), .lineBegin = 0, .lineEnd = 0, .rollbackLineFeedCount = 0, .fullLine = false};
+        return {.data = StringView(),
+                .lineBegin = 0,
+                .lineEnd = 0,
+                .rollbackLineFeedCount = 0,
+                .fullLine = false,
+                .forceRollbackLineFeedCount = 0};
     }
 
     size_t nextProtocolFunctionIndex = protocolFunctionIndex - 1;
@@ -2326,7 +2351,12 @@ LineInfo DockerJsonFileParser::NewGetLastLine(StringView buffer,
 
         LineInfo line;
         parseLine(rawLine, line);
-        line.rollbackLineFeedCount += finalLine.rollbackLineFeedCount;
+        line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount;
+        if (line.fullLine) {
+            line.rollbackLineFeedCount += finalLine.rollbackLineFeedCount;
+        } else {
+            line.forceRollbackLineFeedCount += line.rollbackLineFeedCount;
+        }
         finalLine = std::move(line);
         if (!finalLine.fullLine) {
             if (finalLine.lineBegin == 0) {
@@ -2334,7 +2364,8 @@ LineInfo DockerJsonFileParser::NewGetLastLine(StringView buffer,
                         .lineBegin = 0,
                         .lineEnd = 0,
                         .rollbackLineFeedCount = finalLine.rollbackLineFeedCount,
-                        .fullLine = false};
+                        .fullLine = false,
+                        .forceRollbackLineFeedCount = 0};
             }
             end = finalLine.lineBegin - 1;
         }
@@ -2385,11 +2416,21 @@ LineInfo ContainerdTextParser::NewGetLastLine(StringView buffer,
                                               bool needSingleLine,
                                               std::vector<BaseLineParse*>* lineParsers) {
     if (end == 0) {
-        return {.data = StringView(), .lineBegin = 0, .lineEnd = 0, .rollbackLineFeedCount = 0, .fullLine = false};
+        return {.data = StringView(),
+                .lineBegin = 0,
+                .lineEnd = 0,
+                .rollbackLineFeedCount = 0,
+                .fullLine = false,
+                .forceRollbackLineFeedCount = 0};
     }
     if (protocolFunctionIndex == 0) {
-        // 异常情况, DockerJsonFileParse不允许在最后一个解析器
-        return {.data = StringView(), .lineBegin = 0, .lineEnd = 0, .rollbackLineFeedCount = 0, .fullLine = false};
+        // 异常情况, ContainerdTextParser不允许在最后一个解析器
+        return {.data = StringView(),
+                .lineBegin = 0,
+                .lineEnd = 0,
+                .rollbackLineFeedCount = 0,
+                .fullLine = false,
+                .forceRollbackLineFeedCount = 0};
     }
     LineInfo finalLine;
     finalLine.fullLine = false;
@@ -2405,7 +2446,12 @@ LineInfo ContainerdTextParser::NewGetLastLine(StringView buffer,
 
         LineInfo line;
         parseLine(rawLine, line);
-        line.rollbackLineFeedCount += finalLine.rollbackLineFeedCount;
+        line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount;
+        if (line.fullLine) {
+            line.rollbackLineFeedCount += finalLine.rollbackLineFeedCount;
+        } else {
+            line.forceRollbackLineFeedCount += line.rollbackLineFeedCount;
+        }
         finalLine = std::move(line);
         mergeLines(finalLine, finalLine, true);
         if (!finalLine.fullLine) {
@@ -2414,7 +2460,8 @@ LineInfo ContainerdTextParser::NewGetLastLine(StringView buffer,
                         .lineBegin = 0,
                         .lineEnd = 0,
                         .rollbackLineFeedCount = finalLine.rollbackLineFeedCount,
-                        .fullLine = false};
+                        .fullLine = false,
+                        .forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount};
             }
             end = finalLine.lineBegin - 1;
         }
