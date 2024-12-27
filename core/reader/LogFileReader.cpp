@@ -2021,7 +2021,8 @@ LogFileReader::FileCompareResult LogFileReader::CompareToFile(const string& file
         3. continue\nend\ncontinue\nend\n -> continue\nxxx\nend
     5. mLogEndRegPtr != NULL
         1. xxx\nend\n -> xxx\nend
-        1. xxx\nend\nxxx\n -> xxx\nend
+        2. xxx\nend\nxxx\n -> xxx\nend
+        3. xxx\nend -> ""
 */
 /*
     return: the number of bytes left, including \n
@@ -2040,6 +2041,7 @@ LogFileReader::RemoveLastIncompleteLog(char* buffer, int32_t size, int32_t& roll
     rollbackLineFeedCount = 0;
     if (mReaderConfig.first->mInputType == FileReaderOptions::InputType::InputContainerStdio) {
         // Multiline rollback
+        bool foundEnd = false;
         if (mMultilineConfig.first->IsMultiline()) {
             std::string exception;
             while (endPs >= 0) {
@@ -2051,6 +2053,7 @@ LogFileReader::RemoveLastIncompleteLog(char* buffer, int32_t size, int32_t& roll
                                          *mMultilineConfig.first->GetEndPatternReg(),
                                          exception)) {
                         rollbackLineFeedCount += content.forceRollbackLineFeedCount;
+                        foundEnd = true;
                         // Ensure the end line is complete
                         if (buffer[content.lineEnd] == '\n') {
                             return content.lineEnd + 1;
@@ -2072,6 +2075,9 @@ LogFileReader::RemoveLastIncompleteLog(char* buffer, int32_t size, int32_t& roll
                 endPs = content.lineBegin - 1;
             }
         }
+        if (mMultilineConfig.first->GetEndPatternReg() && foundEnd) {
+            return 0;
+        }
         // Single line rollback or all unmatch rollback
         rollbackLineFeedCount = 0;
         if (buffer[size - 1] == '\n') {
@@ -2088,6 +2094,7 @@ LogFileReader::RemoveLastIncompleteLog(char* buffer, int32_t size, int32_t& roll
         rollbackLineFeedCount = content.rollbackLineFeedCount;
         return content.lineBegin;
     } else {
+        bool foundEnd = false;
         // Multiline rollback
         if (mMultilineConfig.first->IsMultiline()) {
             std::string exception;
@@ -2097,6 +2104,7 @@ LogFileReader::RemoveLastIncompleteLog(char* buffer, int32_t size, int32_t& roll
                     // start + end, continue + end, end
                     if (BoostRegexSearch(
                             content.data(), content.size(), *mMultilineConfig.first->GetEndPatternReg(), exception)) {
+                        foundEnd = true;
                         // Ensure the end line is complete
                         if (buffer[endPs] == '\n') {
                             return endPs + 1;
@@ -2115,6 +2123,9 @@ LogFileReader::RemoveLastIncompleteLog(char* buffer, int32_t size, int32_t& roll
                 ++rollbackLineFeedCount;
                 endPs = content.data() - buffer - 1;
             }
+        }
+        if (mMultilineConfig.first->GetEndPatternReg() && foundEnd) {
+            return 0;
         }
         // Single line rollback or all unmatch rollback
         rollbackLineFeedCount = 0;
