@@ -2362,11 +2362,12 @@ LineInfo DockerJsonFileParser::NewGetLastLine(StringView buffer,
 
         LineInfo line;
         parseLine(rawLine, line);
-        line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount;
         if (line.fullLine) {
-            line.rollbackLineFeedCount += finalLine.rollbackLineFeedCount;
+            line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount;
+            line.rollbackLineFeedCount = finalLine.rollbackLineFeedCount + line.rollbackLineFeedCount;
         } else {
-            line.forceRollbackLineFeedCount += line.rollbackLineFeedCount;
+            line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount + line.rollbackLineFeedCount;
+            line.rollbackLineFeedCount = finalLine.rollbackLineFeedCount;
         }
         finalLine = std::move(line);
         if (!finalLine.fullLine) {
@@ -2457,11 +2458,12 @@ LineInfo ContainerdTextParser::NewGetLastLine(StringView buffer,
 
         LineInfo line;
         parseLine(rawLine, line);
-        line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount;
         if (line.fullLine) {
-            line.rollbackLineFeedCount += finalLine.rollbackLineFeedCount;
+            line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount;
+            line.rollbackLineFeedCount = finalLine.rollbackLineFeedCount + line.rollbackLineFeedCount;
         } else {
-            line.forceRollbackLineFeedCount += line.rollbackLineFeedCount;
+            line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount + line.rollbackLineFeedCount;
+            line.rollbackLineFeedCount = finalLine.rollbackLineFeedCount;
         }
         finalLine = std::move(line);
         mergeLines(finalLine, finalLine, true);
