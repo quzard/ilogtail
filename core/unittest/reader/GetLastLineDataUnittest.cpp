@@ -104,7 +104,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineSingleLine
 
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL(false, line.fullLine);
             }
             // case: PartLogFlag存在，第三个空格不存在
@@ -122,7 +123,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineSingleLine
 
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL(false, line.fullLine);
             }
             // case: PartLogFlag不存在，第二个空格存在
@@ -197,7 +199,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineSingleLine
 
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL(false, line.fullLine);
             }
             // case: PartLogFlag存在，第三个空格不存在
@@ -215,7 +218,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineSingleLine
 
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL(false, line.fullLine);
             }
             // case: PartLogFlag不存在，第二个空格存在
@@ -289,7 +293,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineSingleLine
 
             APSARA_TEST_EQUAL("789", line.data.to_string());
             APSARA_TEST_EQUAL(0, line.lineBegin);
-            APSARA_TEST_EQUAL(3, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(2, line.forceRollbackLineFeedCount);
             APSARA_TEST_EQUAL(true, line.fullLine);
         }
         // case: F + P + P + '\n'
@@ -308,7 +313,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineSingleLine
 
             APSARA_TEST_EQUAL("789", line.data.to_string());
             APSARA_TEST_EQUAL(0, line.lineBegin);
-            APSARA_TEST_EQUAL(3, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(2, line.forceRollbackLineFeedCount);
             APSARA_TEST_EQUAL(true, line.fullLine);
         }
 
@@ -483,7 +489,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineSingleLine
 
             APSARA_TEST_EQUAL("", line.data.to_string());
             APSARA_TEST_EQUAL(0, line.lineBegin);
-            APSARA_TEST_EQUAL(2, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(2, line.forceRollbackLineFeedCount);
             APSARA_TEST_EQUAL(false, line.fullLine);
         }
         // case: P + P + '\n'
@@ -502,7 +509,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineSingleLine
 
             APSARA_TEST_EQUAL("", line.data.to_string());
             APSARA_TEST_EQUAL(0, line.lineBegin);
-            APSARA_TEST_EQUAL(2, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(2, line.forceRollbackLineFeedCount);
             APSARA_TEST_EQUAL(false, line.fullLine);
         }
     }
@@ -532,7 +540,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineMerge() {
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
                 APSARA_TEST_EQUAL(0, line.lineEnd);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL(true, line.fullLine);
             }
             {
@@ -571,7 +580,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineMerge() {
 
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL(false, line.fullLine);
             }
             // case: PartLogFlag存在，第三个空格不存在
@@ -589,7 +599,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineMerge() {
 
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL(false, line.fullLine);
             }
             // case: PartLogFlag不存在，第二个空格存在
@@ -664,7 +675,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineMerge() {
 
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL(false, line.fullLine);
             }
             // case: PartLogFlag存在，第三个空格不存在
@@ -682,7 +694,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineMerge() {
 
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL(false, line.fullLine);
             }
             // case: PartLogFlag不存在，第二个空格存在
@@ -756,7 +769,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineMerge() {
 
             APSARA_TEST_EQUAL("789", line.data.to_string());
             APSARA_TEST_EQUAL(0, line.lineBegin);
-            APSARA_TEST_EQUAL(3, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(2, line.forceRollbackLineFeedCount);
             APSARA_TEST_EQUAL(true, line.fullLine);
         }
         // case: F + P + P + '\n'
@@ -775,7 +789,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineMerge() {
 
             APSARA_TEST_EQUAL("789", line.data.to_string());
             APSARA_TEST_EQUAL(0, line.lineBegin);
-            APSARA_TEST_EQUAL(3, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(2, line.forceRollbackLineFeedCount);
             APSARA_TEST_EQUAL(true, line.fullLine);
         }
 
@@ -950,7 +965,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineMerge() {
 
             APSARA_TEST_EQUAL("", line.data.to_string());
             APSARA_TEST_EQUAL(0, line.lineBegin);
-            APSARA_TEST_EQUAL(2, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(2, line.forceRollbackLineFeedCount);
             APSARA_TEST_EQUAL(false, line.fullLine);
         }
         // case: P + P + '\n'
@@ -969,7 +985,8 @@ void LastMatchedContainerdTextLineUnittest::TestLastContainerdTextLineMerge() {
 
             APSARA_TEST_EQUAL("", line.data.to_string());
             APSARA_TEST_EQUAL(0, line.lineBegin);
-            APSARA_TEST_EQUAL(2, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+            APSARA_TEST_EQUAL(2, line.forceRollbackLineFeedCount);
             APSARA_TEST_EQUAL(false, line.fullLine);
         }
     }
@@ -1069,7 +1086,8 @@ void LastMatchedDockerJsonFileUnittest::TestLastDockerJsonFile() {
                     endPs = size;
                 }
                 LineInfo line = logFileReader.NewGetLastLine(testLog, endPs);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
                 APSARA_TEST_EQUAL(false, line.fullLine);
@@ -1086,7 +1104,8 @@ void LastMatchedDockerJsonFileUnittest::TestLastDockerJsonFile() {
                     endPs = size;
                 }
                 LineInfo line = logFileReader.NewGetLastLine(testLog, endPs);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
                 APSARA_TEST_EQUAL(false, line.fullLine);
@@ -1103,7 +1122,8 @@ void LastMatchedDockerJsonFileUnittest::TestLastDockerJsonFile() {
                     endPs = size;
                 }
                 LineInfo line = logFileReader.NewGetLastLine(testLog, endPs);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
                 APSARA_TEST_EQUAL(false, line.fullLine);
@@ -1120,7 +1140,8 @@ void LastMatchedDockerJsonFileUnittest::TestLastDockerJsonFile() {
                     endPs = size;
                 }
                 LineInfo line = logFileReader.NewGetLastLine(testLog, endPs);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
                 APSARA_TEST_EQUAL(false, line.fullLine);
@@ -1162,7 +1183,8 @@ void LastMatchedDockerJsonFileUnittest::TestLastDockerJsonFile() {
                     endPs = size;
                 }
                 LineInfo line = logFileReader.NewGetLastLine(testLog, endPs);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
                 APSARA_TEST_EQUAL(false, line.fullLine);
@@ -1181,7 +1203,8 @@ void LastMatchedDockerJsonFileUnittest::TestLastDockerJsonFile() {
                     endPs = size;
                 }
                 LineInfo line = logFileReader.NewGetLastLine(testLog, endPs);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
                 APSARA_TEST_EQUAL(false, line.fullLine);
@@ -1200,7 +1223,8 @@ void LastMatchedDockerJsonFileUnittest::TestLastDockerJsonFile() {
                     endPs = size;
                 }
                 LineInfo line = logFileReader.NewGetLastLine(testLog, endPs);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
                 APSARA_TEST_EQUAL(false, line.fullLine);
@@ -1219,7 +1243,8 @@ void LastMatchedDockerJsonFileUnittest::TestLastDockerJsonFile() {
                     endPs = size;
                 }
                 LineInfo line = logFileReader.NewGetLastLine(testLog, endPs);
-                APSARA_TEST_EQUAL(1, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(0, line.rollbackLineFeedCount);
+                APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
                 APSARA_TEST_EQUAL("", line.data.to_string());
                 APSARA_TEST_EQUAL(0, line.lineBegin);
                 APSARA_TEST_EQUAL(false, line.fullLine);
@@ -1332,7 +1357,8 @@ void LastMatchedContainerdTextWithDockerJsonUnittest::TestContainerdTextWithDock
             endPs = size;
         }
         LineInfo line = logFileReader.NewGetLastLine(testLog, endPs);
-        APSARA_TEST_EQUAL(4, line.rollbackLineFeedCount);
+        APSARA_TEST_EQUAL(2, line.rollbackLineFeedCount);
+        APSARA_TEST_EQUAL(0, line.forceRollbackLineFeedCount);
         APSARA_TEST_EQUAL(R"(Exception in thread  "main" java.lang.NullPoinntterException)", line.data.to_string());
         APSARA_TEST_EQUAL(0, line.lineBegin);
         APSARA_TEST_EQUAL(true, line.fullLine);
@@ -1382,7 +1408,8 @@ void LastMatchedContainerdTextWithDockerJsonUnittest::TestDockerJsonWithContaine
             endPs = size;
         }
         LineInfo line = logFileReader.NewGetLastLine(testLog, endPs);
-        APSARA_TEST_EQUAL(3, line.rollbackLineFeedCount);
+        APSARA_TEST_EQUAL(2, line.rollbackLineFeedCount);
+        APSARA_TEST_EQUAL(1, line.forceRollbackLineFeedCount);
         APSARA_TEST_EQUAL(R"(Exception in thread  "main" java.lang.NullPoinntterException)", line.data.to_string());
         APSARA_TEST_EQUAL(0, line.lineBegin);
         APSARA_TEST_EQUAL(true, line.fullLine);
