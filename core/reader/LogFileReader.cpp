@@ -2377,7 +2377,7 @@ LineInfo DockerJsonFileParser::NewGetLastLine(StringView buffer,
                         .lineEnd = 0,
                         .rollbackLineFeedCount = finalLine.rollbackLineFeedCount,
                         .fullLine = false,
-                        .forceRollbackLineFeedCount = 0};
+                        .forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount};
             }
             end = finalLine.lineBegin - 1;
         }
