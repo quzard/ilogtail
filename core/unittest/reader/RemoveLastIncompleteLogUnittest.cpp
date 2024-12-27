@@ -437,24 +437,26 @@ void RemoveLastIncompleteLogMultilineUnittest::TestRemoveLastIncompleteLogWithEn
         APSARA_TEST_EQUAL_FATAL(1, rollbackLineFeedCount);
     }
     { // case: all unmatch
-        std::string expectMatch = "\n\n";
-        std::string testLog = expectMatch + LOG_UNMATCH;
-        int32_t rollbackLineFeedCount = 0;
-        int32_t matchSize = logFileReader.RemoveLastIncompleteLog(
-            const_cast<char*>(testLog.data()), testLog.size(), rollbackLineFeedCount);
-        APSARA_TEST_EQUAL_FATAL(static_cast<int32_t>(expectMatch.size()), matchSize);
-        APSARA_TEST_EQUAL_FATAL(std::string(testLog.data(), matchSize), expectMatch);
-        APSARA_TEST_EQUAL_FATAL(1, rollbackLineFeedCount);
-    }
-    { // case: all unmatch
-        std::string expectMatch = "\n\n";
-        std::string testLog = expectMatch + LOG_UNMATCH + "\n";
-        int32_t rollbackLineFeedCount = 0;
-        int32_t matchSize = logFileReader.RemoveLastIncompleteLog(
-            const_cast<char*>(testLog.data()), testLog.size(), rollbackLineFeedCount);
-        APSARA_TEST_EQUAL_FATAL(static_cast<int32_t>(expectMatch.size()), matchSize);
-        APSARA_TEST_EQUAL_FATAL(std::string(testLog.data(), matchSize), expectMatch);
-        APSARA_TEST_EQUAL_FATAL(0, rollbackLineFeedCount);
+        {
+            std::string expectMatch = "\n\n";
+            std::string testLog = expectMatch + LOG_UNMATCH;
+            int32_t rollbackLineFeedCount = 0;
+            int32_t matchSize = logFileReader.RemoveLastIncompleteLog(
+                const_cast<char*>(testLog.data()), testLog.size(), rollbackLineFeedCount);
+            APSARA_TEST_EQUAL_FATAL(static_cast<int32_t>(expectMatch.size()), matchSize);
+            APSARA_TEST_EQUAL_FATAL(std::string(testLog.data(), matchSize), expectMatch);
+            APSARA_TEST_EQUAL_FATAL(1, rollbackLineFeedCount);
+        }
+        {
+            std::string expectMatch = "\n\n";
+            std::string testLog = expectMatch + LOG_UNMATCH + "\n";
+            int32_t rollbackLineFeedCount = 0;
+            int32_t matchSize = logFileReader.RemoveLastIncompleteLog(
+                const_cast<char*>(testLog.data()), testLog.size(), rollbackLineFeedCount);
+            APSARA_TEST_EQUAL_FATAL(static_cast<int32_t>(expectMatch.size()), matchSize);
+            APSARA_TEST_EQUAL_FATAL(std::string(testLog.data(), matchSize), expectMatch);
+            APSARA_TEST_EQUAL_FATAL(0, rollbackLineFeedCount);
+        }
     }
 }
 
@@ -575,17 +577,32 @@ void ContainerdTextRemoveLastIncompleteLogMultilineUnittest::TestRemoveLastIncom
         APSARA_TEST_EQUAL_FATAL(1, rollbackLineFeedCount);
     }
     { // case: all unmatch
-        std::string expectMatch = "\n\n";
-        std::string testLog = expectMatch + LOG_FULL + LOG_UNMATCH;
+        {
+            std::string expectMatch = "\n\n";
+            std::string testLog = expectMatch + LOG_FULL + LOG_UNMATCH;
 
-        int32_t rollbackLineFeedCount = 0;
-        int32_t matchSize = logFileReader.RemoveLastIncompleteLog(
-            const_cast<char*>(testLog.data()), testLog.size(), rollbackLineFeedCount);
-        const auto& matchLog = std::string(testLog.data(), matchSize);
+            int32_t rollbackLineFeedCount = 0;
+            int32_t matchSize = logFileReader.RemoveLastIncompleteLog(
+                const_cast<char*>(testLog.data()), testLog.size(), rollbackLineFeedCount);
+            const auto& matchLog = std::string(testLog.data(), matchSize);
 
-        APSARA_TEST_EQUAL_FATAL(int32_t(expectMatch.size()), matchSize);
-        APSARA_TEST_EQUAL_FATAL(expectMatch, matchLog);
-        APSARA_TEST_EQUAL_FATAL(1, rollbackLineFeedCount);
+            APSARA_TEST_EQUAL_FATAL(int32_t(expectMatch.size()), matchSize);
+            APSARA_TEST_EQUAL_FATAL(expectMatch, matchLog);
+            APSARA_TEST_EQUAL_FATAL(1, rollbackLineFeedCount);
+        }
+        {
+            std::string expectMatch = "\n\n";
+            std::string testLog = expectMatch + LOG_FULL + LOG_UNMATCH + "\n";
+
+            int32_t rollbackLineFeedCount = 0;
+            int32_t matchSize = logFileReader.RemoveLastIncompleteLog(
+                const_cast<char*>(testLog.data()), testLog.size(), rollbackLineFeedCount);
+            const auto& matchLog = std::string(testLog.data(), matchSize);
+
+            APSARA_TEST_EQUAL_FATAL(int32_t(expectMatch.size()), matchSize);
+            APSARA_TEST_EQUAL_FATAL(expectMatch, matchLog);
+            APSARA_TEST_EQUAL_FATAL(0, rollbackLineFeedCount);
+        }
     }
     {
         std::string expectMatch

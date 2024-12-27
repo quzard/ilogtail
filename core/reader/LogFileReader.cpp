@@ -2072,10 +2072,6 @@ LogFileReader::RemoveLastIncompleteLog(char* buffer, int32_t size, int32_t& roll
         // Single line rollback or all unmatch rollback
         rollbackLineFeedCount = 0;
         if (buffer[size - 1] == '\n') {
-            if (mReaderConfig.first->mInputType == FileReaderOptions::InputType::InputFile) {
-                // 如果是文件采集，直接返回，节约性能
-                return size;
-            }
             endPs = size - 1;
         } else {
             endPs = size;
