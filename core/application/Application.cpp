@@ -170,7 +170,8 @@ void Application::Init() {
     appInfoJson["UUID"] = Json::Value(Application::GetInstance()->GetUUID());
     appInfoJson["instance_id"] = Json::Value(Application::GetInstance()->GetInstanceId());
 #ifdef __ENTERPRISE__
-    appInfoJson["host_id"] = Json::Value(FetchHostId());
+    appInfoJson["host_id"] = Json::Value(FetchHostId().hostId);
+    appInfoJson["host_id_type"] = Json::Value(FetchHostId().type);
     appInfoJson[GetVersionTag()] = Json::Value(ILOGTAIL_VERSION);
 #else
     appInfoJson[GetVersionTag()] = Json::Value(string(ILOGTAIL_VERSION) + " Community Edition");
@@ -260,8 +261,7 @@ void Application::Start() { // GCOVR_EXCL_START
 
     ProcessorRunner::GetInstance()->Init();
 
-    time_t curTime = 0, lastConfigCheckTime = 0, lastUpdateMetricTime = 0,
-           lastCheckTagsTime = 0, lastQueueGCTime = 0;
+    time_t curTime = 0, lastConfigCheckTime = 0, lastUpdateMetricTime = 0, lastCheckTagsTime = 0, lastQueueGCTime = 0;
 #ifndef LOGTAIL_NO_TC_MALLOC
     time_t lastTcmallocReleaseMemTime = 0;
 #endif

@@ -14,6 +14,7 @@
 
 #include "MachineInfoUtil.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include <boost/filesystem.hpp>
@@ -25,6 +26,7 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <netdb.h>
+#include <netpacket/packet.h>
 #include <pwd.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -175,10 +177,17 @@ std::string GetHostName() {
     return std::string(hostname);
 }
 
-std::unordered_set<std::string> GetNicIpv4IPSet() {
+NicInfo GetNicInfo() {
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+    static bool isFirst = true;
+    static NicInfo nicInfo;
+    if (!isFirst) {
+        return nicInfo;
+    }
+    isFirst = false;
     struct ifaddrs* ifAddrStruct = NULL;
     void* tmpAddrPtr = NULL;
-    std::unordered_set<std::string> ipSet;
     getifaddrs(&ifAddrStruct);
     for (struct ifaddrs* ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
         if (ifa->ifa_addr == NULL) {
@@ -191,14 +200,31 @@ std::unordered_set<std::string> GetNicIpv4IPSet() {
             std::string ip(addressBuffer);
             // The loopback on most Linux distributions is lo, however it is not portable. For example loopback in OSX
             // is lo0.
-            if (0 == strcmp("lo", ifa->ifa_name) || ip.empty() || StartWith(ip, "127.")) {
-                continue;
+            if (0 != strcmp("lo", ifa->ifa_name) && !ip.empty() && !StartWith(ip, "127.")) {
+                LOG_INFO(sLogger, ("GetNicInfo, interface", ifa->ifa_name)("ip", ip));
+                nicInfo.ipSet.insert(std::move(ip));
             }
-            ipSet.insert(std::move(ip));
+        }
+        if (ifa->ifa_addr->sa_family == AF_PACKET) {
+            auto* s = (struct sockaddr_ll*)ifa->ifa_addr;
+            if (s != nullptr && s->sll_halen > 0) {
+                std::string mac;
+                mac.reserve(s->sll_halen * 3);
+                for (auto i = 0; i < s->sll_halen; i++) {
+                    char hex[3];
+                    snprintf(hex, sizeof(hex), "%02x", (s->sll_addr[i]));
+                    mac += hex;
+                    if (i + 1 != s->sll_halen) {
+                        mac += ":";
+                    }
+                }
+                LOG_INFO(sLogger, ("GetNicInfo, interface", ifa->ifa_name)("mac", mac));
+                nicInfo.macSet.insert(std::move(mac));
+            }
         }
     }
     freeifaddrs(ifAddrStruct);
-    return ipSet;
+    return nicInfo;
 }
 
 std::string GetHostIpByHostName() {
@@ -231,7 +257,7 @@ std::string GetHostIpByHostName() {
     std::string firstIp;
     char ipStr[INET_ADDRSTRLEN + 1] = "";
 #if defined(__linux__)
-    auto ipSet = GetNicIpv4IPSet();
+    const auto& ipSet = GetNicInfo().ipSet;
     for (size_t i = 0; i < addrs.size(); ++i) {
         auto p = inet_ntop(AF_INET, &addrs[i].sin_addr, ipStr, INET_ADDRSTRLEN);
         if (p == nullptr) {
@@ -334,7 +360,7 @@ std::string GetAnyAvailableIP() {
 #if defined(__linux__)
     std::string retIP;
     char host[NI_MAXHOST];
-    auto ipSet = GetNicIpv4IPSet();
+    const auto& ipSet = GetNicInfo().ipSet;
     if (!ipSet.empty()) {
         for (auto& ip : ipSet) {
             struct sockaddr_in sa;
@@ -567,29 +593,61 @@ const std::string& GetLocalHostId() {
     return hostId;
 }
 
-std::string FetchHostId() {
+HostId FetchHostId() {
     static std::mutex mutex;
     std::lock_guard<std::mutex> lock(mutex);
     static std::string hostId;
+    static HostId::HostIdType type;
     if (!hostId.empty()) {
-        return hostId;
+        return HostId{hostId, type};
     }
     hostId = STRING_FLAG(agent_host_id);
     if (!hostId.empty()) {
-        return hostId;
+        type = HostId::HostIdType::CUSTOM;
+        return HostId{hostId, type};
     }
     ECSMeta meta = FetchECSMeta();
     hostId = meta.instanceID;
     if (!hostId.empty()) {
-        return hostId;
+        type = HostId::HostIdType::ECS;
+        return HostId{hostId, type};
     }
     hostId = GetSerialNumberFromEcsAssist();
     if (!hostId.empty()) {
-        return hostId;
+        type = HostId::HostIdType::ECS_ASSIST;
+        return HostId{hostId, type};
     }
     hostId = GetLocalHostId();
+    type = HostId::HostIdType::LOCAL;
+    return HostId{hostId, type};
+}
 
-    return hostId;
+bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
+    rapidjson::Document doc;
+    doc.Parse(meta.c_str());
+    if (doc.HasParseError() || !doc.IsObject()) {
+        LOG_WARNING(sLogger, ("fetch ecs meta fail", meta));
+        return false;
+    }
+
+    if (const auto instanceItr = doc.FindMember("instance-id");
+        instanceItr != doc.MemberEnd() && instanceItr->value.IsString()) {
+        metaObj.instanceID = instanceItr->value.GetString();
+    }
+
+    if (const auto userItr = doc.FindMember("owner-account-id");
+        userItr != doc.MemberEnd() && userItr->value.IsString()) {
+        metaObj.userID = userItr->value.GetString();
+    }
+
+    if (const auto regionItr = doc.FindMember("region-id");
+        regionItr != doc.MemberEnd() && regionItr->value.IsString()) {
+        metaObj.regionID = regionItr->value.GetString();
+    }
+    if (const auto macItr = doc.FindMember("mac"); macItr != doc.MemberEnd() && macItr->value.IsString()) {
+        metaObj.mac = macItr->value.GetString();
+    }
+    return true;
 }
 
 ECSMeta FetchECSMeta() {
@@ -597,10 +655,25 @@ ECSMeta FetchECSMeta() {
     std::lock_guard<std::mutex> lock(mutex);
     static ECSMeta metaObj;
     static bool initialized = false;
+    static std::string fileName
+        = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
     if (initialized) {
         return metaObj;
     }
     initialized = true;
+    if (!CheckExistance(fileName)) {
+        return metaObj;
+    }
+    std::string ecsMetaStr;
+    if (ReadFileContent(fileName, ecsMetaStr) && ParseECSMeta(ecsMetaStr, metaObj)) {
+        const auto& macSet = GetNicInfo().macSet;
+        for (const auto& mac : macSet) {
+            if (mac == metaObj.mac) {
+                return metaObj;
+            }
+        }
+    }
+    metaObj = ECSMeta();
     CURL* curl = nullptr;
     for (size_t retryTimes = 1; retryTimes <= 5; retryTimes++) {
         curl = curl_easy_init();
@@ -663,30 +736,15 @@ ECSMeta FetchECSMeta() {
             LOG_WARNING(sLogger, ("fetch ecs meta fail", curl_easy_strerror(res)));
             continue;
         }
-
-        rapidjson::Document doc;
-        doc.Parse(meta.c_str());
-        if (doc.HasParseError() || !doc.IsObject()) {
-            LOG_WARNING(sLogger, ("fetch ecs meta fail", meta));
+        if (!ParseECSMeta(meta, metaObj)) {
             continue;
         }
 
-        if (const auto instanceItr = doc.FindMember("instance-id");
-            instanceItr != doc.MemberEnd() && instanceItr->value.IsString()) {
-            metaObj.instanceID = instanceItr->value.GetString();
-        }
-
-        if (const auto userItr = doc.FindMember("owner-account-id");
-            userItr != doc.MemberEnd() && userItr->value.IsString()) {
-            metaObj.userID = userItr->value.GetString();
-        }
-
-        if (const auto regionItr = doc.FindMember("region-id");
-            regionItr != doc.MemberEnd() && regionItr->value.IsString()) {
-            metaObj.regionID = regionItr->value.GetString();
-        }
-
         curl_easy_cleanup(curl);
+        std::string errMsg;
+        if (!WriteFile(fileName, meta, errMsg)) {
+            LOG_WARNING(sLogger, ("failed to write ecs meta to file", fileName)("error", errMsg));
+        }
         return metaObj;
     }
 

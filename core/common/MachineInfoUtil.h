@@ -27,11 +27,30 @@ struct ECSMeta {
     std::string instanceID;
     std::string userID;
     std::string regionID;
+    std::string mac;
+};
+
+struct HostId {
+    std::string hostId;
+    enum HostIdType {
+        CUSTOM,
+        ECS,
+        ECS_ASSIST,
+        SERIAL,
+        LOCAL,
+    };
+    HostIdType type;
+};
+
+struct NicInfo {
+    std::unordered_set<std::string> ipSet;
+    std::unordered_set<std::string> macSet;
 };
 std::string GetOsDetail();
 std::string GetUsername();
 std::string GetHostName();
 std::string GetHostIpByHostName();
+NicInfo GetNicInfo();
 std::string GetHostIpByInterface(const std::string& intf);
 uint32_t GetHostIpValueByInterface(const std::string& intf);
 std::string GetHostIp(const std::string& intf = "");
@@ -40,7 +59,7 @@ bool GetKernelInfo(std::string& kernelRelease, int64_t& kernelVersion);
 bool GetRedHatReleaseInfo(std::string& os, int64_t& osVersion, std::string bashPath = "");
 bool IsDigitsDotsHostname(const char* hostname);
 ECSMeta FetchECSMeta();
-std::string FetchHostId();
+HostId FetchHostId();
 
 // GetAnyAvailableIP walks through all interfaces (AF_INET) to find an available IP.
 // Priority:
