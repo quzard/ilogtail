@@ -2364,14 +2364,19 @@ LineInfo DockerJsonFileParser::NewGetLastLine(StringView buffer,
 
         LineInfo line;
         parseLine(rawLine, line);
+        int32_t rollbackLineFeedCount = 0;
+        int32_t forceRollbackLineFeedCount = 0;
         if (line.fullLine) {
-            line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount;
-            line.rollbackLineFeedCount = finalLine.rollbackLineFeedCount + line.rollbackLineFeedCount;
+            rollbackLineFeedCount = line.rollbackLineFeedCount;
+            forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount;
         } else {
-            line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount + line.rollbackLineFeedCount;
-            line.rollbackLineFeedCount = finalLine.rollbackLineFeedCount;
+            forceRollbackLineFeedCount
+                = finalLine.forceRollbackLineFeedCount + line.forceRollbackLineFeedCount + line.rollbackLineFeedCount;
+            rollbackLineFeedCount = 0;
         }
         finalLine = std::move(line);
+        finalLine.rollbackLineFeedCount = rollbackLineFeedCount;
+        finalLine.forceRollbackLineFeedCount = forceRollbackLineFeedCount;
         if (!finalLine.fullLine) {
             if (finalLine.lineBegin == 0) {
                 return {.data = StringView(),
@@ -2460,14 +2465,19 @@ LineInfo ContainerdTextParser::NewGetLastLine(StringView buffer,
 
         LineInfo line;
         parseLine(rawLine, line);
+        int32_t rollbackLineFeedCount = 0;
+        int32_t forceRollbackLineFeedCount = 0;
         if (line.fullLine) {
-            line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount;
-            line.rollbackLineFeedCount = finalLine.rollbackLineFeedCount + line.rollbackLineFeedCount;
+            rollbackLineFeedCount = line.rollbackLineFeedCount;
+            forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount;
         } else {
-            line.forceRollbackLineFeedCount = finalLine.forceRollbackLineFeedCount + line.rollbackLineFeedCount;
-            line.rollbackLineFeedCount = finalLine.rollbackLineFeedCount;
+            forceRollbackLineFeedCount
+                = finalLine.forceRollbackLineFeedCount + line.forceRollbackLineFeedCount + line.rollbackLineFeedCount;
+            rollbackLineFeedCount = 0;
         }
         finalLine = std::move(line);
+        finalLine.rollbackLineFeedCount = rollbackLineFeedCount;
+        finalLine.forceRollbackLineFeedCount = forceRollbackLineFeedCount;
         mergeLines(finalLine, finalLine, true);
         if (!finalLine.fullLine) {
             if (finalLine.lineBegin == 0) {
