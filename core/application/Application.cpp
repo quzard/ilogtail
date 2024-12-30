@@ -171,7 +171,6 @@ void Application::Init() {
     appInfoJson["instance_id"] = Json::Value(Application::GetInstance()->GetInstanceId());
 #ifdef __ENTERPRISE__
     appInfoJson["host_id"] = Json::Value(FetchHostId().hostId);
-    appInfoJson["host_id_type"] = Json::Value(FetchHostId().type);
     appInfoJson[GetVersionTag()] = Json::Value(ILOGTAIL_VERSION);
 #else
     appInfoJson[GetVersionTag()] = Json::Value(string(ILOGTAIL_VERSION) + " Community Edition");

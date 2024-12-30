@@ -218,7 +218,7 @@ NicInfo GetNicInfo() {
                         mac += ":";
                     }
                 }
-                LOG_INFO(sLogger, ("GetNicInfo, interface", ifa->ifa_name)("mac", mac));
+                LOG_INFO(sLogger, ("GetNicInfo, interface", ifa->ifa_name)("mac", ToLowerCaseString(mac)));
                 nicInfo.macSet.insert(std::move(mac));
             }
         }
@@ -645,7 +645,7 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
         metaObj.regionID = regionItr->value.GetString();
     }
     if (const auto macItr = doc.FindMember("mac"); macItr != doc.MemberEnd() && macItr->value.IsString()) {
-        metaObj.mac = macItr->value.GetString();
+        metaObj.mac = ToLowerCaseString(macItr->value.GetString());
     }
     return true;
 }
