@@ -2087,11 +2087,13 @@ LogFileReader::RemoveLastIncompleteLog(char* buffer, int32_t size, int32_t& roll
         }
         LineInfo content = NewGetLastLine(StringView(buffer, size), endPs, true);
         // 最后一行是完整行,且以 \n 结尾
-        if (content.fullLine && buffer[size - 1] == '\n' && content.lineEnd == endPs) {
-            return size;
+        if (content.fullLine && buffer[content.lineEnd] == '\n') {
+            rollbackLineFeedCount += content.forceRollbackLineFeedCount;
+            return content.lineEnd + 1;
         }
         content = NewGetLastLine(StringView(buffer, size), endPs, false);
-        rollbackLineFeedCount = content.rollbackLineFeedCount;
+        rollbackLineFeedCount += content.forceRollbackLineFeedCount;
+        rollbackLineFeedCount += content.rollbackLineFeedCount;
         return content.lineBegin;
     } else {
         bool foundEnd = false;
