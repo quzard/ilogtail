@@ -493,7 +493,7 @@ void GetLastLineUnittest::TestGetLastLine() {
         "dir", "file", DevInode(), std::make_pair(&readerOpts, &ctx), std::make_pair(nullptr, &ctx));
     auto lastLine = logFileReader.GetLastLine(const_cast<char*>(testLog.data()), testLog.size());
     std::string expectLog = "third line";
-    APSARA_TEST_EQUAL_FATAL(expectLog, std::string(lastLine.data(), lastLine.size()));
+    APSARA_TEST_EQUAL_FATAL(expectLog, std::string(lastLine.data.data(), lastLine.data.size()));
 }
 
 void GetLastLineUnittest::TestGetLastLineEmpty() {
@@ -501,9 +501,9 @@ void GetLastLineUnittest::TestGetLastLineEmpty() {
     LogFileReader logFileReader(
         "dir", "file", DevInode(), std::make_pair(&readerOpts, &ctx), std::make_pair(nullptr, &ctx));
     auto lastLine = logFileReader.GetLastLine(const_cast<char*>(testLog.data()), testLog.size());
-    APSARA_TEST_EQUAL_FATAL(0, int(lastLine.size()));
-    APSARA_TEST_EQUAL_FATAL("", std::string(lastLine.data(), lastLine.size()));
-    APSARA_TEST_EQUAL_FATAL(testLog.data(), lastLine.data());
+    APSARA_TEST_EQUAL_FATAL(0, int(lastLine.data.size()));
+    APSARA_TEST_EQUAL_FATAL("", std::string(lastLine.data.data(), lastLine.data.size()));
+    APSARA_TEST_EQUAL_FATAL(testLog.data(), lastLine.data);
 }
 
 class ContainerdTextRemoveLastIncompleteLogMultilineUnittest : public ::testing::Test {
