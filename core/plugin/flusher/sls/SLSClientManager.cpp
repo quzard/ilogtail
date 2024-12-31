@@ -24,6 +24,7 @@
 #include "common/EndpointUtil.h"
 #include "common/Flags.h"
 #include "common/LogtailCommonFlags.h"
+#include "common/MachineInfoUtil.h"
 #include "common/StringTools.h"
 #include "common/TimeUtil.h"
 #include "common/version.h"
@@ -705,6 +706,7 @@ void SLSClientManager::GenerateUserAgent() {
 
 string SLSClientManager::GetRunningEnvironment() {
     string env;
+    const ECSMeta& ecsMetaCur = HostIdentifier::Instance()->GetECSMeta();
     if (getenv("ALIYUN_LOG_STATIC_CONTAINER_INFO")) {
         env = "ECI";
     } else if (getenv("ACK_NODE_LOCAL_DNS_ADMISSION_CONTROLLER_SERVICE_HOST")) {
@@ -714,7 +716,7 @@ string SLSClientManager::GetRunningEnvironment() {
         // containers in K8S will possess the above env
         if (AppConfig::GetInstance()->IsPurageContainerMode()) {
             env = "K8S-Daemonset";
-        } else if (TryCurlEndpoint("http://100.100.100.200/latest/meta-data")) {
+        } else if (ecsMetaCur.isValid) {
             // containers in ACK can be connected to the above address, see
             // https://help.aliyun.com/document_detail/108460.html#section-akf-lwh-1gb.
             // Note: we can not distinguish ACK from K8S built on ECS
@@ -724,7 +726,7 @@ string SLSClientManager::GetRunningEnvironment() {
         }
     } else if (AppConfig::GetInstance()->IsPurageContainerMode() || getenv("ALIYUN_LOGTAIL_CONFIG")) {
         env = "Docker";
-    } else if (TryCurlEndpoint("http://100.100.100.200/latest/meta-data")) {
+    } else if (ecsMetaCur.isValid) {
         env = "ECS";
     } else {
         env = "Others";
