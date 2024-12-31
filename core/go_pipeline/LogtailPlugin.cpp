@@ -73,7 +73,7 @@ LogtailPlugin::LogtailPlugin() {
     mPluginCfg["LoongcollectorVersionTag"] = GetVersionTag();
     mPluginCfg["LoongcollectorCheckPointFile"] = GetGoPluginCheckpoint();
     mPluginCfg["LoongcollectorThirdPartyDir"] = GetAgentThirdPartyDir();
-    mPluginCfg["PrometheusAuthorizationPath"] = GetAgentPrometheusAuthorizationPath();
+    mPluginCfg["LoongcollectorPrometheusAuthorizationPath"] = GetAgentPrometheusAuthorizationPath();
     mPluginCfg["HostIP"] = LoongCollectorMonitor::mIpAddr;
     mPluginCfg["Hostname"] = LoongCollectorMonitor::mHostname;
     mPluginCfg["EnableContainerdUpperDirDetect"] = BOOL_FLAG(enable_containerd_upper_dir_detect);
