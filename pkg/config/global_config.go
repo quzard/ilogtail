@@ -28,6 +28,8 @@ type GlobalConfig struct {
 	DefaultLogQueueSize         int
 	DefaultLogGroupQueueSize    int
 	Tags                        map[string]string
+	// Directory to store prometheus configuration file.
+	PrometheusAuthorizationPath string
 	// Directory to store loongcollector data, such as checkpoint, etc.
 	LoongcollectorConfDir string
 	// Directory to store loongcollector log config.
@@ -82,6 +84,7 @@ func newGlobalConfig() (cfg GlobalConfig) {
 		LoongcollectorDataDir:        "./data/",
 		LoongcollectorDebugDir:       "./debug/",
 		LoongcollectorThirdPartyDir:  "./thirdparty/",
+		PrometheusAuthorizationPath:  "./conf/",
 		DelayStopSec:                 300,
 	}
 	return

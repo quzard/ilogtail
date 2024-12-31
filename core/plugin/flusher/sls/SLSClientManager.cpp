@@ -20,8 +20,8 @@
 
 #include "app_config/AppConfig.h"
 #include "common/Flags.h"
-#include "common/MachineInfoUtil.h"
 #include "common/HashUtil.h"
+#include "common/MachineInfoUtil.h"
 #include "common/StringTools.h"
 #include "common/http/Constant.h"
 #include "common/http/Curl.h"
