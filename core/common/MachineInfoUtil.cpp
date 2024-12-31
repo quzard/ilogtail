@@ -604,11 +604,6 @@ HostIdentifier::HostIdentifier() {
     hostid = Hostid{hostId, type};
 }
 
-const HostIdentifier::Hostid& HostIdentifier::GetHostId() {
-    std::lock_guard<std::mutex> lock(mutex);
-    return hostid;
-}
-
 bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
     rapidjson::Document doc;
     doc.Parse(meta.c_str());

@@ -63,8 +63,22 @@ public:
         std::string id;
         Type type;
     };
-    const Hostid& GetHostId();
-    const ECSMeta& GetECSMeta();
+    const HostIdentifier::Hostid& GetHostId() {
+        std::lock_guard<std::mutex> lock(mutex);
+        return hostid;
+    }
+    const ECSMeta& GetECSMeta() {
+        std::lock_guard<std::mutex> lock(mutex);
+        return metadata;
+    }
+    void SetECSMeta(const ECSMeta& meta) {
+        std::lock_guard<std::mutex> lock(mutex);
+        metadata = meta;
+    }
+    void SetHostId(const Hostid& hostid) {
+        std::lock_guard<std::mutex> lock(mutex);
+        this->hostid = hostid;
+    }
 
     HostIdentifier();
     static HostIdentifier* Instance() {
