@@ -14,13 +14,14 @@
 
 #include "MachineInfoUtil.h"
 
+#include <rapidjson/document.h>
+#include <rapidjson/rapidjson.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <boost/filesystem.hpp>
 
 #include "AppConfig.h"
-#include "common/UUIDUtil.h"
 #if defined(__linux__)
 #include <arpa/inet.h>
 #include <ifaddrs.h>
@@ -530,7 +531,7 @@ size_t FetchECSMetaCallback(char* buffer, size_t size, size_t nmemb, std::string
 }
 
 // 从云助手获取序列号
-std::string GetSerialNumberFromEcsAssist(const std::string& machineIdFile) {
+std::string HostIdentifier::GetSerialNumberFromEcsAssist(const std::string& machineIdFile) {
     std::string sn;
     if (CheckExistance(machineIdFile)) {
         if (!ReadFileContent(machineIdFile, sn)) {
@@ -540,24 +541,7 @@ std::string GetSerialNumberFromEcsAssist(const std::string& machineIdFile) {
     return sn;
 }
 
-static std::string GetEcsAssistMachineIdFile() {
-#if defined(WIN32)
-    return "C:\\ProgramData\\aliyun\\assist\\hybrid\\machine-id";
-#else
-    return "/usr/local/share/aliyun-assist/hybrid/machine-id";
-#endif
-}
-
-std::string GetSerialNumberFromEcsAssist() {
-    return GetSerialNumberFromEcsAssist(GetEcsAssistMachineIdFile());
-}
-
-std::string RandomHostid() {
-    static std::string hostId = CalculateRandomUUID();
-    return hostId;
-}
-
-const std::string& GetLocalHostId() {
+const std::string& HostIdentifier::GetLocalHostId() {
     static std::string fileName = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "host_id";
     static std::string hostId;
     if (!hostId.empty()) {
@@ -593,33 +577,36 @@ const std::string& GetLocalHostId() {
     return hostId;
 }
 
-HostId FetchHostId() {
-    static std::mutex mutex;
-    std::lock_guard<std::mutex> lock(mutex);
-    static std::string hostId;
-    static HostId::HostIdType type;
-    if (!hostId.empty()) {
-        return HostId{hostId, type};
-    }
+HostIdentifier::HostIdentifier() {
+    std::string hostId;
+    Type type;
     hostId = STRING_FLAG(agent_host_id);
     if (!hostId.empty()) {
-        type = HostId::HostIdType::CUSTOM;
-        return HostId{hostId, type};
+        type = Type::CUSTOM;
+        hostid = Hostid{hostId, type};
+        return;
     }
-    ECSMeta meta = FetchECSMeta();
-    hostId = meta.instanceID;
+    metadata = GetECSMetaFromFile();
+    hostId = metadata.instanceID;
     if (!hostId.empty()) {
-        type = HostId::HostIdType::ECS;
-        return HostId{hostId, type};
+        type = Type::ECS;
+        hostid = Hostid{hostId, type};
+        return;
     }
     hostId = GetSerialNumberFromEcsAssist();
     if (!hostId.empty()) {
-        type = HostId::HostIdType::ECS_ASSIST;
-        return HostId{hostId, type};
+        type = Type::ECS_ASSIST;
+        hostid = Hostid{hostId, type};
+        return;
     }
     hostId = GetLocalHostId();
-    type = HostId::HostIdType::LOCAL;
-    return HostId{hostId, type};
+    type = Type::LOCAL;
+    hostid = Hostid{hostId, type};
+}
+
+const HostIdentifier::Hostid& HostIdentifier::GetHostId() {
+    std::lock_guard<std::mutex> lock(mutex);
+    return hostid;
 }
 
 bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
@@ -650,17 +637,11 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
     return true;
 }
 
-ECSMeta FetchECSMeta() {
-    static std::mutex mutex;
-    std::lock_guard<std::mutex> lock(mutex);
-    static ECSMeta metaObj;
-    static bool initialized = false;
+
+ECSMeta HostIdentifier::GetECSMetaFromFile() {
+    ECSMeta metaObj;
     static std::string fileName
         = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
-    if (initialized) {
-        return metaObj;
-    }
-    initialized = true;
     if (!CheckExistance(fileName)) {
         return metaObj;
     }
@@ -673,7 +654,10 @@ ECSMeta FetchECSMeta() {
             }
         }
     }
-    metaObj = ECSMeta();
+    return FetchECSMeta();
+}
+
+ECSMeta FetchECSMeta() {
     CURL* curl = nullptr;
     for (size_t retryTimes = 1; retryTimes <= 5; retryTimes++) {
         curl = curl_easy_init();
@@ -682,14 +666,8 @@ ECSMeta FetchECSMeta() {
         }
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-    if (!curl) {
-        LOG_WARNING(sLogger,
-                    ("curl handler cannot be initialized during user environment identification",
-                     "ecs meta may be mislabeled"));
-        return metaObj;
-    }
-    for (size_t retryTimes = 1; retryTimes <= 3; retryTimes++) {
-        // Get token first
+    ECSMeta metaObj;
+    if (curl) {
         std::string token;
         auto* tokenHeaders = curl_slist_append(nullptr, "X-aliyun-ecs-metadata-token-ttl-seconds:3600");
         if (!tokenHeaders) {
@@ -701,7 +679,7 @@ ECSMeta FetchECSMeta() {
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, tokenHeaders);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &token);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, FetchECSMetaCallback);
 
@@ -710,14 +688,16 @@ ECSMeta FetchECSMeta() {
 
         if (res != CURLE_OK) {
             LOG_WARNING(sLogger, ("fetch ecs token fail", curl_easy_strerror(res)));
-            continue;
+            curl_easy_cleanup(curl);
+            return metaObj;
         }
 
         // Get metadata with token
         std::string meta;
         auto* metaHeaders = curl_slist_append(nullptr, ("X-aliyun-ecs-metadata-token: " + token).c_str());
         if (!metaHeaders) {
-            continue;
+            curl_easy_cleanup(curl);
+            return metaObj;
         }
 
         curl_easy_reset(curl);
@@ -734,22 +714,20 @@ ECSMeta FetchECSMeta() {
 
         if (res != CURLE_OK) {
             LOG_WARNING(sLogger, ("fetch ecs meta fail", curl_easy_strerror(res)));
-            continue;
+            curl_easy_cleanup(curl);
+            return metaObj;
         }
         if (!ParseECSMeta(meta, metaObj)) {
-            continue;
+            curl_easy_cleanup(curl);
+            return metaObj;
         }
 
         curl_easy_cleanup(curl);
-        std::string errMsg;
-        if (!WriteFile(fileName, meta, errMsg)) {
-            LOG_WARNING(sLogger, ("failed to write ecs meta to file", fileName)("error", errMsg));
-        }
         return metaObj;
     }
-
-    curl_easy_cleanup(curl);
-    LOG_WARNING(sLogger, ("failed to fetch ecs metadata after retries", "ecs meta may be mislabeled"));
+    LOG_WARNING(
+        sLogger,
+        ("curl handler cannot be initialized during user environment identification", "ecs meta may be mislabeled"));
     return metaObj;
 }
 

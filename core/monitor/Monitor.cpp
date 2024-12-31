@@ -593,7 +593,7 @@ LoongCollectorMonitor::LoongCollectorMonitor() {
     mOsDetail = GetOsDetail();
     mUsername = GetUsername();
     // TODO: This may take up to 3s to construct the object. This is bad.
-    ECSMeta ecsMeta = FetchECSMeta();
+    ECSMeta ecsMeta = HostIdentifier::Instance()->GetECSMeta();
     mECSInstanceID = ecsMeta.instanceID;
     mECSUserID = ecsMeta.userID;
     mECSRegionID = ecsMeta.regionID;
