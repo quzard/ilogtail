@@ -171,9 +171,9 @@ void Application::Init() {
     appInfoJson["instance_id"] = Json::Value(Application::GetInstance()->GetInstanceId());
 #ifdef __ENTERPRISE__
     appInfoJson["host_id"] = Json::Value(FetchHostId());
-    appInfoJson[GetVersionTag()] = Json::Value(ILOGTAIL_VERSION);
+    appInfoJson["loongcollector_version"] = Json::Value(ILOGTAIL_VERSION);
 #else
-    appInfoJson[GetVersionTag()] = Json::Value(string(ILOGTAIL_VERSION) + " Community Edition");
+    appInfoJson["loongcollector_version"] = Json::Value(string(ILOGTAIL_VERSION) + " Community Edition");
     appInfoJson["git_hash"] = Json::Value(ILOGTAIL_GIT_HASH);
     appInfoJson["build_date"] = Json::Value(ILOGTAIL_BUILD_DATE);
 #endif
@@ -260,8 +260,7 @@ void Application::Start() { // GCOVR_EXCL_START
 
     ProcessorRunner::GetInstance()->Init();
 
-    time_t curTime = 0, lastConfigCheckTime = 0, lastUpdateMetricTime = 0,
-           lastCheckTagsTime = 0, lastQueueGCTime = 0;
+    time_t curTime = 0, lastConfigCheckTime = 0, lastUpdateMetricTime = 0, lastCheckTagsTime = 0, lastQueueGCTime = 0;
 #ifndef LOGTAIL_NO_TC_MALLOC
     time_t lastTcmallocReleaseMemTime = 0;
 #endif

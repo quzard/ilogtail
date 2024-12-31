@@ -202,7 +202,7 @@ const double GLOBAL_CONCURRENCY_FREE_PERCENTAGE_FOR_ONE_REGION = 0.5;
 const int32_t MIN_SEND_REQUEST_CONCURRENCY = 15;
 // 单地域并发度最大值
 const int32_t MAX_SEND_REQUEST_CONCURRENCY = 80;
-// 并发度统计数量&&时间间隔 
+// 并发度统计数量&&时间间隔
 const uint32_t CONCURRENCY_STATISTIC_THRESHOLD = 10;
 const uint32_t CONCURRENCY_STATISTIC_INTERVAL_THRESHOLD_SECONDS = 3;
 // 并发度不回退百分比阈值
@@ -280,6 +280,23 @@ std::string GetAgentLogDir() {
         dir = GetProcessExecutionDir();
     } else {
         dir = STRING_FLAG(loongcollector_log_dir) + PATH_SEPARATOR;
+    }
+#endif
+    return dir;
+}
+
+std::string GetAgentGoCheckpointDir() {
+    static std::string dir;
+    if (!dir.empty()) {
+        return dir;
+    }
+#if defined(APSARA_UNIT_TEST_MAIN)
+    dir = GetProcessExecutionDir();
+#else
+    if (BOOL_FLAG(logtail_mode)) {
+        dir = AppConfig::GetInstance()->GetLogtailSysConfDir();
+    } else {
+        dir = return GetAgentDataDir();
     }
 #endif
     return dir;
@@ -492,14 +509,6 @@ string GetContinuousPipelineConfigDir() {
     } else {
         return "continuous_pipeline_config";
     }
-}
-
-string GetPluginLogName() {
-    return "go_plugin.LOG";
-}
-
-std::string GetVersionTag() {
-    return "loongcollector_version";
 }
 
 std::string GetGoPluginCheckpoint() {
@@ -1178,10 +1187,10 @@ void AppConfig::LoadResourceConf(const Json::Value& confJson) {
         LOG_INFO(sLogger, ("bind_interface", mBindInterface));
     }
 
-    // mSendRequestConcurrency was limited 
+    // mSendRequestConcurrency was limited
     if (mSendRequestConcurrency < MIN_SEND_REQUEST_CONCURRENCY) {
         mSendRequestConcurrency = MIN_SEND_REQUEST_CONCURRENCY;
-    } 
+    }
     if (mSendRequestConcurrency > MAX_SEND_REQUEST_CONCURRENCY) {
         mSendRequestConcurrency = MAX_SEND_REQUEST_CONCURRENCY;
     }

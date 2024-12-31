@@ -35,9 +35,9 @@ extern const double GLOBAL_CONCURRENCY_FREE_PERCENTAGE_FOR_ONE_REGION;
 extern const int32_t MIN_SEND_REQUEST_CONCURRENCY;
 extern const int32_t MAX_SEND_REQUEST_CONCURRENCY;
 extern const uint32_t CONCURRENCY_STATISTIC_THRESHOLD;
-extern const uint32_t CONCURRENCY_STATISTIC_INTERVAL_THRESHOLD_SECONDS;    
-extern const uint32_t NO_FALL_BACK_FAIL_PERCENTAGE;  
-extern const uint32_t SLOW_FALL_BACK_FAIL_PERCENTAGE; 
+extern const uint32_t CONCURRENCY_STATISTIC_INTERVAL_THRESHOLD_SECONDS;
+extern const uint32_t NO_FALL_BACK_FAIL_PERCENTAGE;
+extern const uint32_t SLOW_FALL_BACK_FAIL_PERCENTAGE;
 
 void CreateAgentDir();
 
@@ -46,6 +46,7 @@ std::string GetAgentDataDir();
 std::string GetAgentConfDir();
 std::string GetAgentRunDir();
 std::string GetAgentThirdPartyDir();
+std::string GetAgentGoCheckpointDir();
 
 std::string GetAgentConfigFile();
 std::string GetAgentAppInfoFile();
@@ -62,8 +63,6 @@ std::string GetLegacyUserLocalConfigFilePath();
 std::string GetExactlyOnceCheckpoint();
 std::string GetContinuousPipelineConfigDir();
 std::string GetPipelineConfigDir();
-std::string GetPluginLogName();
-std::string GetVersionTag();
 std::string GetGoPluginCheckpoint();
 std::string GetAgentName();
 std::string GetMonitorInfoFileName();
@@ -215,7 +214,6 @@ private:
     std::vector<std::string> mHostPathBlacklist;
 
     std::string mBindInterface;
-
 
 
     // /**
@@ -450,7 +448,9 @@ public:
     // 全局并发度
     int32_t GetSendRequestGlobalConcurrency() const { return mSendRequestGlobalConcurrency; }
 
-    double GetGlobalConcurrencyFreePercentageForOneRegion() const { return GLOBAL_CONCURRENCY_FREE_PERCENTAGE_FOR_ONE_REGION; }
+    double GetGlobalConcurrencyFreePercentageForOneRegion() const {
+        return GLOBAL_CONCURRENCY_FREE_PERCENTAGE_FOR_ONE_REGION;
+    }
 
     int32_t GetProcessThreadCount() const { return mProcessThreadCount; }
 

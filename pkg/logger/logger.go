@@ -329,7 +329,7 @@ func generateDefaultConfig() string {
 	if memoryReceiverFlag {
 		memoryReceiverFlagStr = "<custom name=\"memory\" />"
 	}
-	return fmt.Sprintf(template, levelFlag, config.LoongcollectorGlobalConfig.LoongcollectorLogDir, config.LoongcollectorGlobalConfig.LoongcollectorPluginLogName, consoleStr, memoryReceiverFlagStr)
+	return fmt.Sprintf(template, levelFlag, config.LoongcollectorGlobalConfig.LoongcollectorLogDir, "go_plugin.LOG", consoleStr, memoryReceiverFlagStr)
 }
 
 // Close the logger and recover the stdout and stderr
