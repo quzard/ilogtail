@@ -20,7 +20,6 @@
 
 #include "app_config/AppConfig.h"
 #include "common/Flags.h"
-#include "common/LogtailCommonFlags.h"
 #include "common/MachineInfoUtil.h"
 #include "common/HashUtil.h"
 #include "common/StringTools.h"
