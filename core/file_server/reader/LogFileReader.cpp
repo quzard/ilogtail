@@ -2195,6 +2195,13 @@ StringBuffer* BaseLineParse::GetStringBuffer() {
     return &mStringBuffer;
 }
 
+/*
+    params:
+        buffer: all read logs
+        end: the end position of current line, \n or \0
+    return:
+        last line (backward), without \n or \0
+*/
 LineInfo RawTextParser::GetLastLine(StringView buffer,
                                     int32_t end,
                                     size_t protocolFunctionIndex,
