@@ -613,6 +613,8 @@ ECSMeta HostIdentifier::GetECSMetaFromFile() {
     std::string ecsMetaStr;
     if (ReadFileContent(fileName, ecsMetaStr) && ParseECSMeta(ecsMetaStr, metaObj)) {
         return metaObj;
+    } else {
+        LOG_ERROR(sLogger, ("read ecs meta from file fail", fileName)("ecs meta", ecsMetaStr));
     }
     return metaObj;
 }
