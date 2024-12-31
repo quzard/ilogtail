@@ -94,7 +94,7 @@ private:
     // 从云助手获取序列号
     std::string GetSerialNumberFromEcsAssist(const std::string& machineIdFile);
     static std::string GetEcsAssistMachineIdFile() {
-#if defined(WIN32)
+#if defined(_MSC_VER)
         return "C:\\ProgramData\\aliyun\\assist\\hybrid\\machine-id";
 #else
         return "/usr/local/share/aliyun-assist/hybrid/machine-id";
