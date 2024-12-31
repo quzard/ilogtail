@@ -40,11 +40,13 @@
 
 using namespace std;
 
-#define ILOGTAIL_PREFIX "ilogtail_"
-#define ILOGTAIL_PIDFILE_SUFFIX ".pid"
 #define LOONGCOLLECTOR_PREFIX "loongcollector_"
 
+#ifdef __ENTERPRISE__
+DEFINE_FLAG_BOOL(logtail_mode, "logtail mode", true);
+#else
 DEFINE_FLAG_BOOL(logtail_mode, "logtail mode", false);
+#endif
 DEFINE_FLAG_INT32(max_buffer_num, "max size", 40);
 DEFINE_FLAG_INT32(pub_max_buffer_num, "max size", 8);
 DEFINE_FLAG_INT32(pub_max_send_byte_per_sec, "the max send speed per sec, realtime thread", 20 * 1024 * 1024);
@@ -122,8 +124,6 @@ DECLARE_FLAG_INT32(reader_close_unused_file_time);
 DECLARE_FLAG_INT32(batch_send_interval);
 DECLARE_FLAG_INT32(batch_send_metric_size);
 
-DECLARE_FLAG_BOOL(send_prefer_real_ip);
-DECLARE_FLAG_INT32(send_switch_real_ip_interval);
 DECLARE_FLAG_INT32(truncate_pos_skip_bytes);
 DECLARE_FLAG_INT32(default_tail_limit_kb);
 
@@ -173,6 +173,7 @@ DEFINE_FLAG_STRING(logtail_snapshot_dir, "snapshot dir on local disk", "snapshot
 DEFINE_FLAG_STRING(logtail_profile_snapshot, "reader profile on local disk", "logtail_profile_snapshot");
 DEFINE_FLAG_STRING(ilogtail_config_env_name, "config file path", "ALIYUN_LOGTAIL_CONFIG");
 
+
 #if defined(__linux__)
 DEFINE_FLAG_STRING(adhoc_check_point_file_dir, "", "/tmp/logtail_adhoc_checkpoint");
 #elif defined(_MSC_VER)
@@ -191,6 +192,21 @@ DEFINE_FLAG_STRING(sls_observer_ebpf_host_path,
 
 namespace logtail {
 constexpr int32_t kDefaultMaxSendBytePerSec = 25 * 1024 * 1024; // the max send speed per sec, realtime thread
+
+
+// 全局并发度保留余量百分比
+const double GLOBAL_CONCURRENCY_FREE_PERCENTAGE_FOR_ONE_REGION = 0.5;
+// 单地域并发度最小值
+const int32_t MIN_SEND_REQUEST_CONCURRENCY = 15;
+// 单地域并发度最大值
+const int32_t MAX_SEND_REQUEST_CONCURRENCY = 80;
+// 并发度统计数量&&时间间隔 
+const uint32_t CONCURRENCY_STATISTIC_THRESHOLD = 10;
+const uint32_t CONCURRENCY_STATISTIC_INTERVAL_THRESHOLD_SECONDS = 3;
+// 并发度不回退百分比阈值
+const uint32_t NO_FALL_BACK_FAIL_PERCENTAGE = 10;
+// 并发度慢回退百分比阈值
+const uint32_t SLOW_FALL_BACK_FAIL_PERCENTAGE = 40;
 
 std::string AppConfig::sLocalConfigDir = "local";
 void CreateAgentDir() {
@@ -457,11 +473,7 @@ string GetAgentLoggersPrefix() {
 }
 
 string GetAgentLogName() {
-    if (BOOL_FLAG(logtail_mode)) {
-        return "ilogtail.LOG";
-    } else {
-        return "loongcollector.LOG";
-    }
+    return "loongcollector.LOG";
 }
 
 string GetObserverEbpfHostPath() {
@@ -515,19 +527,11 @@ string GetContinuousPipelineConfigDir() {
 }
 
 string GetPluginLogName() {
-    if (BOOL_FLAG(logtail_mode)) {
-        return "logtail_plugin.LOG";
-    } else {
-        return "go_plugin.LOG";
-    }
+    return "go_plugin.LOG";
 }
 
 std::string GetVersionTag() {
-    if (BOOL_FLAG(logtail_mode)) {
-        return "logtail_version";
-    } else {
-        return "loongcollector_version";
-    }
+    return "loongcollector_version";
 }
 
 std::string GetGoPluginCheckpoint() {
@@ -539,43 +543,19 @@ std::string GetGoPluginCheckpoint() {
 }
 
 std::string GetAgentName() {
-    if (BOOL_FLAG(logtail_mode)) {
-        return "ilogtail";
-    } else {
-        return "loongcollector";
-    }
+    return "loongcollector";
 }
 
 std::string GetMonitorInfoFileName() {
-    if (BOOL_FLAG(logtail_mode)) {
-        return "logtail_monitor_info";
-    } else {
-        return "loongcollector_monitor_info";
-    }
+    return "loongcollector_monitor_info";
 }
 
 std::string GetSymLinkName() {
-    if (BOOL_FLAG(logtail_mode)) {
-        return GetProcessExecutionDir() + "ilogtail";
-    } else {
-        return GetProcessExecutionDir() + "loongcollector";
-    }
-}
-
-std::string GetPidFileName() {
-    if (BOOL_FLAG(logtail_mode)) {
-        return GetProcessExecutionDir() + ILOGTAIL_PREFIX + ILOGTAIL_VERSION + ILOGTAIL_PIDFILE_SUFFIX;
-    } else {
-        return GetAgentRunDir() + "loongcollector.pid";
-    }
+    return GetProcessExecutionDir() + "loongcollector";
 }
 
 std::string GetAgentPrefix() {
-    if (BOOL_FLAG(logtail_mode)) {
-        return ILOGTAIL_PREFIX;
-    } else {
-        return LOONGCOLLECTOR_PREFIX;
-    }
+    return LOONGCOLLECTOR_PREFIX;
 }
 
 AppConfig::AppConfig() {
@@ -1041,25 +1021,10 @@ void AppConfig::LoadResourceConf(const Json::Value& confJson) {
     mCheckPointFilePath = AbsolutePath(mCheckPointFilePath, mProcessExecutionDir);
     LOG_INFO(sLogger, ("logtail checkpoint path", mCheckPointFilePath));
 
-    if (confJson.isMember("send_prefer_real_ip") && confJson["send_prefer_real_ip"].isBool()) {
-        BOOL_FLAG(send_prefer_real_ip) = confJson["send_prefer_real_ip"].asBool();
-    }
-
-    if (confJson.isMember("send_switch_real_ip_interval") && confJson["send_switch_real_ip_interval"].isInt()) {
-        INT32_FLAG(send_switch_real_ip_interval) = confJson["send_switch_real_ip_interval"].asInt();
-    }
-
     LoadInt32Parameter(INT32_FLAG(truncate_pos_skip_bytes),
                        confJson,
                        "truncate_pos_skip_bytes",
                        "ALIYUN_LOGTAIL_TRUNCATE_POS_SKIP_BYTES");
-
-    if (BOOL_FLAG(send_prefer_real_ip)) {
-        LOG_INFO(sLogger,
-                 ("change send policy, prefer use real ip, switch interval seconds",
-                  INT32_FLAG(send_switch_real_ip_interval))("truncate skip read offset",
-                                                            INT32_FLAG(truncate_pos_skip_bytes)));
-    }
 
     if (confJson.isMember("ignore_dir_inode_changed") && confJson["ignore_dir_inode_changed"].isBool()) {
         mIgnoreDirInodeChanged = confJson["ignore_dir_inode_changed"].asBool();
@@ -1229,6 +1194,15 @@ void AppConfig::LoadResourceConf(const Json::Value& confJson) {
             mBindInterface.clear();
         LOG_INFO(sLogger, ("bind_interface", mBindInterface));
     }
+
+    // mSendRequestConcurrency was limited 
+    if (mSendRequestConcurrency < MIN_SEND_REQUEST_CONCURRENCY) {
+        mSendRequestConcurrency = MIN_SEND_REQUEST_CONCURRENCY;
+    } 
+    if (mSendRequestConcurrency > MAX_SEND_REQUEST_CONCURRENCY) {
+        mSendRequestConcurrency = MAX_SEND_REQUEST_CONCURRENCY;
+    }
+    mSendRequestGlobalConcurrency = mSendRequestConcurrency * (1 + GLOBAL_CONCURRENCY_FREE_PERCENTAGE_FOR_ONE_REGION);
 }
 
 bool AppConfig::CheckAndResetProxyEnv() {

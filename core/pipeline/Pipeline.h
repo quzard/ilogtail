@@ -121,6 +121,7 @@ private:
     friend class PipelineUnittest;
     friend class InputContainerStdioUnittest;
     friend class InputFileUnittest;
+    friend class InputInternalMetricsUnittest;
     friend class InputPrometheusUnittest;
     friend class ProcessorTagNativeUnittest;
     friend class FlusherSLSUnittest;
@@ -128,6 +129,7 @@ private:
     friend class InputProcessSecurityUnittest;
     friend class InputNetworkSecurityUnittest;
     friend class InputNetworkObserverUnittest;
+    friend class PipelineUpdateUnittest;
 #endif
 };
 
