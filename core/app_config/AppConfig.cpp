@@ -296,7 +296,7 @@ std::string GetAgentGoCheckpointDir() {
     if (BOOL_FLAG(logtail_mode)) {
         dir = AppConfig::GetInstance()->GetLogtailSysConfDir();
     } else {
-        dir = return GetAgentDataDir();
+        return GetAgentDataDir();
     }
 #endif
     return dir;
