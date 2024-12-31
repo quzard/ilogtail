@@ -688,6 +688,7 @@ ECSMeta HostIdentifier::FetchECSMeta() {
             return metaObj;
         }
         mMetadataStr = meta;
+        LOG_INFO(sLogger, ("fetch ecs meta success, ecs meta", mMetadataStr));
         curl_easy_cleanup(curl);
         return metaObj;
     }
@@ -703,6 +704,8 @@ void HostIdentifier::DumpECSMeta() {
     std::string errMsg;
     if (!WriteFile(fileName, mMetadataStr, errMsg)) {
         LOG_WARNING(sLogger, ("failed to write ecs meta to file", fileName)("error", errMsg));
+    } else {
+        LOG_INFO(sLogger, ("write ecs meta to file success, fileName", fileName)("mMetadataStr", mMetadataStr));
     }
 }
 
