@@ -557,32 +557,23 @@ HostIdentifier::HostIdentifier() {
 
 void HostIdentifier::UpdateHostId() {
     std::string hostId;
-    Type type;
     hostId = STRING_FLAG(agent_host_id);
     if (!hostId.empty()) {
-        type = Type::CUSTOM;
-        mHostid = Hostid{hostId, type};
-        SetHostId(mHostid);
+        SetHostId(Hostid{hostId, Type::CUSTOM});
         return;
     }
     hostId = mMetadata.instanceID;
     if (!hostId.empty()) {
-        type = Type::ECS;
-        mHostid = Hostid{hostId, type};
-        SetHostId(mHostid);
+        SetHostId(Hostid{hostId, Type::ECS});
         return;
     }
     hostId = GetSerialNumberFromEcsAssist();
     if (!hostId.empty()) {
-        type = Type::ECS_ASSIST;
-        mHostid = Hostid{hostId, type};
-        SetHostId(mHostid);
+        SetHostId(Hostid{hostId, Type::ECS_ASSIST});
         return;
     }
     hostId = GetLocalHostId();
-    type = Type::LOCAL;
-    mHostid = Hostid{hostId, type};
-    SetHostId(mHostid);
+    SetHostId(Hostid{hostId, Type::LOCAL});
 }
 
 void HostIdentifier::SetHostId(const Hostid& hostid) {
