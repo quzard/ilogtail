@@ -90,11 +90,13 @@ public:
         return &instance;
     }
     ECSMeta FetchECSMeta();
+    void DumpECSMeta();
 
 private:
     std::mutex mutex;
     Hostid hostid;
     ECSMeta metadata;
+    std::string metadataStr;
 
     // 从云助手获取序列号
     std::string GetSerialNumberFromEcsAssist(const std::string& machineIdFile);

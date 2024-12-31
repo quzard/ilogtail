@@ -645,6 +645,7 @@ ECSMeta HostIdentifier::GetECSMetaFromFile() {
         const auto& macSet = GetNicInfo().macSet;
         for (const auto& mac : macSet) {
             if (mac == metaObj.mac) {
+                metadataStr = ecsMetaStr;
                 return metaObj;
             }
         }
@@ -716,7 +717,7 @@ ECSMeta HostIdentifier::FetchECSMeta() {
             curl_easy_cleanup(curl);
             return metaObj;
         }
-
+        metadataStr = meta;
         curl_easy_cleanup(curl);
         return metaObj;
     }
@@ -724,6 +725,15 @@ ECSMeta HostIdentifier::FetchECSMeta() {
         sLogger,
         ("curl handler cannot be initialized during user environment identification", "ecs meta may be mislabeled"));
     return metaObj;
+}
+
+void HostIdentifier::DumpECSMeta() {
+    static std::string fileName
+        = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
+    std::string errMsg;
+    if (!WriteFile(fileName, metadataStr, errMsg)) {
+        LOG_WARNING(sLogger, ("failed to write ecs meta to file", fileName)("error", errMsg));
+    }
 }
 
 } // namespace logtail
