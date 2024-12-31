@@ -46,8 +46,6 @@ void GetAllPids(std::unordered_set<int32_t>& pids);
 bool GetKernelInfo(std::string& kernelRelease, int64_t& kernelVersion);
 bool GetRedHatReleaseInfo(std::string& os, int64_t& osVersion, std::string bashPath = "");
 bool IsDigitsDotsHostname(const char* hostname);
-ECSMeta FetchECSMeta();
-
 // GetAnyAvailableIP walks through all interfaces (AF_INET) to find an available IP.
 // Priority:
 // - IP that does not start with "127.".
@@ -91,6 +89,7 @@ public:
         static HostIdentifier instance;
         return &instance;
     }
+    ECSMeta FetchECSMeta();
 
 private:
     std::mutex mutex;
@@ -113,7 +112,6 @@ private:
     }
     const std::string& GetLocalHostId();
 
-    ECSMeta FetchECSMeta();
     ECSMeta GetECSMetaFromFile();
 };
 

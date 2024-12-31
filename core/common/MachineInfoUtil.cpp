@@ -652,7 +652,7 @@ ECSMeta HostIdentifier::GetECSMetaFromFile() {
     return FetchECSMeta();
 }
 
-ECSMeta FetchECSMeta() {
+ECSMeta HostIdentifier::FetchECSMeta() {
     CURL* curl = nullptr;
     for (size_t retryTimes = 1; retryTimes <= 5; retryTimes++) {
         curl = curl_easy_init();
