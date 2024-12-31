@@ -73,10 +73,7 @@ public:
         std::lock_guard<std::mutex> lock(mMutex);
         mMetadata = meta;
     }
-    void SetHostId(const Hostid& hostid) {
-        std::lock_guard<std::mutex> lock(mMutex);
-        mHostid = hostid;
-    }
+    void UpdateHostId();
 
     HostIdentifier();
     static HostIdentifier* Instance() {
@@ -108,6 +105,7 @@ private:
     }
     const std::string& GetLocalHostId();
 
+    void SetHostId(const Hostid& hostid);
     ECSMeta GetECSMetaFromFile();
 };
 

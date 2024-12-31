@@ -551,30 +551,47 @@ const std::string& HostIdentifier::GetLocalHostId() {
 }
 
 HostIdentifier::HostIdentifier() {
+    mMetadata = GetECSMetaFromFile();
+    UpdateHostId();
+}
+
+void HostIdentifier::UpdateHostId() {
     std::string hostId;
     Type type;
-    mMetadata = GetECSMetaFromFile();
     hostId = STRING_FLAG(agent_host_id);
     if (!hostId.empty()) {
         type = Type::CUSTOM;
         mHostid = Hostid{hostId, type};
+        SetHostId(mHostid);
         return;
     }
     hostId = mMetadata.instanceID;
     if (!hostId.empty()) {
         type = Type::ECS;
         mHostid = Hostid{hostId, type};
+        SetHostId(mHostid);
         return;
     }
     hostId = GetSerialNumberFromEcsAssist();
     if (!hostId.empty()) {
         type = Type::ECS_ASSIST;
         mHostid = Hostid{hostId, type};
+        SetHostId(mHostid);
         return;
     }
     hostId = GetLocalHostId();
     type = Type::LOCAL;
     mHostid = Hostid{hostId, type};
+    SetHostId(mHostid);
+}
+
+void HostIdentifier::SetHostId(const Hostid& hostid) {
+    std::lock_guard<std::mutex> lock(mMutex);
+    if (mHostid.id == hostid.id && mHostid.type == hostid.type) {
+        return;
+    }
+    LOG_INFO(sLogger, ("change hostId, from", mHostid)("to", hostid));
+    mHostid = hostid;
 }
 
 bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
