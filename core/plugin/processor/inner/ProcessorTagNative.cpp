@@ -73,27 +73,6 @@ void ProcessorTagNative::Process(PipelineEventGroup& logGroup) {
     }
 
     // process level
-#ifdef __ENTERPRISE__
-    if (BOOL_FLAG(enable_host_id)) {
-        static HostId hostid = FetchHostId();
-        switch (hostid.type) {
-            case HostId::HostIdType::CUSTOM:
-                logGroup.SetTagNoCopy(LOG_RESERVED_KEY_HOSTID, "custom." + hostid.hostId);
-                break;
-            case HostId::HostIdType::ECS:
-                logGroup.SetTagNoCopy(LOG_RESERVED_KEY_HOSTID, "ecs." + hostid.hostId);
-                break;
-            case HostId::HostIdType::ECS_ASSIST:
-                logGroup.SetTagNoCopy(LOG_RESERVED_KEY_HOSTID, "ecs_assist." + hostid.hostId);
-                break;
-            case HostId::HostIdType::LOCAL:
-                logGroup.SetTagNoCopy(LOG_RESERVED_KEY_HOSTID, "local." + hostid.hostId);
-                break;
-            default:
-                logGroup.SetTagNoCopy(LOG_RESERVED_KEY_HOSTID, "unknown." + hostid.hostId);
-        }
-    }
-#endif
     logGroup.SetTagNoCopy(LOG_RESERVED_KEY_HOSTNAME, LoongCollectorMonitor::mHostname);
     logGroup.SetTagNoCopy(LOG_RESERVED_KEY_SOURCE, LoongCollectorMonitor::mIpAddr);
     auto sb = logGroup.GetSourceBuffer()->CopyString(Application::GetInstance()->GetUUID());
