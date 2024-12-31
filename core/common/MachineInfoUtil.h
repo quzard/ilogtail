@@ -27,7 +27,6 @@ struct ECSMeta {
     std::string instanceID;
     std::string userID;
     std::string regionID;
-    std::string mac;
 };
 std::string GetOsDetail();
 std::string GetUsername();

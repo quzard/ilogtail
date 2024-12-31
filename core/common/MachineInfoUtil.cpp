@@ -16,18 +16,15 @@
 
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>
-#include <stdio.h>
 #include <string.h>
 
-#include <boost/filesystem.hpp>
-
 #include "AppConfig.h"
+
 #if defined(__linux__)
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <netdb.h>
-#include <netpacket/packet.h>
 #include <pwd.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -601,9 +598,6 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
     if (const auto regionItr = doc.FindMember("region-id");
         regionItr != doc.MemberEnd() && regionItr->value.IsString()) {
         metaObj.regionID = regionItr->value.GetString();
-    }
-    if (const auto macItr = doc.FindMember("mac"); macItr != doc.MemberEnd() && macItr->value.IsString()) {
-        metaObj.mac = ToLowerCaseString(macItr->value.GetString());
     }
     return true;
 }
