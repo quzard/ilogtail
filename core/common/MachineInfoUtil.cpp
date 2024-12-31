@@ -705,7 +705,6 @@ ECSMeta HostIdentifier::FetchECSMeta() {
             return metaObj;
         }
         mMetadataStr = meta;
-        LOG_INFO(sLogger, ("fetch ecs meta success, ecs meta", mMetadataStr));
         curl_easy_cleanup(curl);
         return metaObj;
     }
