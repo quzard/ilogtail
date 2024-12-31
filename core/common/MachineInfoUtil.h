@@ -29,10 +29,16 @@ struct ECSMeta {
     std::string regionID;
     std::string mac;
 };
+
+struct NicInfo {
+    std::unordered_set<std::string> ipSet;
+    std::unordered_set<std::string> macSet;
+};
 std::string GetOsDetail();
 std::string GetUsername();
 std::string GetHostName();
 std::string GetHostIpByHostName();
+NicInfo GetNicInfo();
 std::string GetHostIpByInterface(const std::string& intf);
 uint32_t GetHostIpValueByInterface(const std::string& intf);
 std::string GetHostIp(const std::string& intf = "");
