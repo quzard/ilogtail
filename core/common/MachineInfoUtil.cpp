@@ -599,6 +599,9 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
         regionItr != doc.MemberEnd() && regionItr->value.IsString()) {
         metaObj.regionID = regionItr->value.GetString();
     }
+    if (!metaObj.instanceID.empty() && !metaObj.userID.empty() && !metaObj.regionID.empty()) {
+        metaObj.isValid = true;
+    }
     return true;
 }
 

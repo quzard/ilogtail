@@ -24,6 +24,7 @@
 namespace logtail {
 
 struct ECSMeta {
+    bool isValid = false;
     std::string instanceID;
     std::string userID;
     std::string regionID;
