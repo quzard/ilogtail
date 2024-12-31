@@ -590,7 +590,8 @@ void HostIdentifier::SetHostId(const Hostid& hostid) {
     if (mHostid.id == hostid.id && mHostid.type == hostid.type) {
         return;
     }
-    LOG_INFO(sLogger, ("change hostId, from", mHostid)("to", hostid));
+    LOG_INFO(sLogger,
+             ("change hostId, id from", mHostid.id)("to", hostid.id)("type from", mHostid.type)("to", hostid.type));
     mHostid = hostid;
 }
 

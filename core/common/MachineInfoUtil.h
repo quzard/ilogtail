@@ -54,7 +54,6 @@ public:
         CUSTOM,
         ECS,
         ECS_ASSIST,
-        SERIAL,
         LOCAL,
     };
     struct Hostid {
