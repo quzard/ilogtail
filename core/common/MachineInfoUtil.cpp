@@ -647,7 +647,7 @@ ECSMeta HostIdentifier::FetchECSMeta() {
         curl_slist_free_all(tokenHeaders);
 
         if (res != CURLE_OK) {
-            LOG_WARNING(sLogger, ("fetch ecs token fail", curl_easy_strerror(res)));
+            LOG_INFO(sLogger, ("fetch ecs token fail", curl_easy_strerror(res)));
             curl_easy_cleanup(curl);
             return metaObj;
         }
@@ -673,7 +673,7 @@ ECSMeta HostIdentifier::FetchECSMeta() {
         curl_slist_free_all(metaHeaders);
 
         if (res != CURLE_OK) {
-            LOG_WARNING(sLogger, ("fetch ecs meta fail", curl_easy_strerror(res)));
+            LOG_INFO(sLogger, ("fetch ecs meta fail", curl_easy_strerror(res)));
             curl_easy_cleanup(curl);
             return metaObj;
         }
