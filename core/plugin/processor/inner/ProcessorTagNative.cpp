@@ -29,9 +29,6 @@
 #endif
 
 DECLARE_FLAG_STRING(ALIYUN_LOG_FILE_TAGS);
-#ifdef __ENTERPRISE__
-DECLARE_FLAG_BOOL(enable_host_id);
-#endif
 
 using namespace std;
 
