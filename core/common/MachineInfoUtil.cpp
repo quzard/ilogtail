@@ -178,17 +178,10 @@ std::string GetHostName() {
     return std::string(hostname);
 }
 
-NicInfo GetNicInfo() {
-    static std::mutex mutex;
-    std::lock_guard<std::mutex> lock(mutex);
-    static bool isFirst = true;
-    static NicInfo nicInfo;
-    if (!isFirst) {
-        return nicInfo;
-    }
-    isFirst = false;
+std::unordered_set<std::string> GetNicIpv4IPSet() {
     struct ifaddrs* ifAddrStruct = NULL;
     void* tmpAddrPtr = NULL;
+    std::unordered_set<std::string> ipSet;
     getifaddrs(&ifAddrStruct);
     for (struct ifaddrs* ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
         if (ifa->ifa_addr == NULL) {
@@ -201,31 +194,14 @@ NicInfo GetNicInfo() {
             std::string ip(addressBuffer);
             // The loopback on most Linux distributions is lo, however it is not portable. For example loopback in OSX
             // is lo0.
-            if (0 != strcmp("lo", ifa->ifa_name) && !ip.empty() && !StartWith(ip, "127.")) {
-                LOG_INFO(sLogger, ("GetNicInfo, interface", ifa->ifa_name)("ip", ip));
-                nicInfo.ipSet.insert(std::move(ip));
+            if (0 == strcmp("lo", ifa->ifa_name) || ip.empty() || StartWith(ip, "127.")) {
+                continue;
             }
-        }
-        if (ifa->ifa_addr->sa_family == AF_PACKET) {
-            auto* s = (struct sockaddr_ll*)ifa->ifa_addr;
-            if (s != nullptr && s->sll_halen > 0) {
-                std::string mac;
-                mac.reserve(s->sll_halen * 3);
-                for (auto i = 0; i < s->sll_halen; i++) {
-                    char hex[3];
-                    snprintf(hex, sizeof(hex), "%02x", (s->sll_addr[i]));
-                    mac += hex;
-                    if (i + 1 != s->sll_halen) {
-                        mac += ":";
-                    }
-                }
-                LOG_INFO(sLogger, ("GetNicInfo, interface", ifa->ifa_name)("mac", ToLowerCaseString(mac)));
-                nicInfo.macSet.insert(std::move(mac));
-            }
+            ipSet.insert(std::move(ip));
         }
     }
     freeifaddrs(ifAddrStruct);
-    return nicInfo;
+    return ipSet;
 }
 
 std::string GetHostIpByHostName() {
@@ -258,7 +234,7 @@ std::string GetHostIpByHostName() {
     std::string firstIp;
     char ipStr[INET_ADDRSTRLEN + 1] = "";
 #if defined(__linux__)
-    const auto& ipSet = GetNicInfo().ipSet;
+    auto ipSet = GetNicIpv4IPSet();
     for (size_t i = 0; i < addrs.size(); ++i) {
         auto p = inet_ntop(AF_INET, &addrs[i].sin_addr, ipStr, INET_ADDRSTRLEN);
         if (p == nullptr) {
@@ -361,7 +337,7 @@ std::string GetAnyAvailableIP() {
 #if defined(__linux__)
     std::string retIP;
     char host[NI_MAXHOST];
-    const auto& ipSet = GetNicInfo().ipSet;
+    auto ipSet = GetNicIpv4IPSet();
     if (!ipSet.empty()) {
         for (auto& ip : ipSet) {
             struct sockaddr_in sa;
@@ -580,28 +556,28 @@ const std::string& HostIdentifier::GetLocalHostId() {
 HostIdentifier::HostIdentifier() {
     std::string hostId;
     Type type;
+    mMetadata = GetECSMetaFromFile();
     hostId = STRING_FLAG(agent_host_id);
     if (!hostId.empty()) {
         type = Type::CUSTOM;
-        hostid = Hostid{hostId, type};
+        mHostid = Hostid{hostId, type};
         return;
     }
-    metadata = GetECSMetaFromFile();
-    hostId = metadata.instanceID;
+    hostId = mMetadata.instanceID;
     if (!hostId.empty()) {
         type = Type::ECS;
-        hostid = Hostid{hostId, type};
+        mHostid = Hostid{hostId, type};
         return;
     }
     hostId = GetSerialNumberFromEcsAssist();
     if (!hostId.empty()) {
         type = Type::ECS_ASSIST;
-        hostid = Hostid{hostId, type};
+        mHostid = Hostid{hostId, type};
         return;
     }
     hostId = GetLocalHostId();
     type = Type::LOCAL;
-    hostid = Hostid{hostId, type};
+    mHostid = Hostid{hostId, type};
 }
 
 bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
@@ -642,15 +618,9 @@ ECSMeta HostIdentifier::GetECSMetaFromFile() {
     }
     std::string ecsMetaStr;
     if (ReadFileContent(fileName, ecsMetaStr) && ParseECSMeta(ecsMetaStr, metaObj)) {
-        const auto& macSet = GetNicInfo().macSet;
-        for (const auto& mac : macSet) {
-            if (mac == metaObj.mac) {
-                metadataStr = ecsMetaStr;
-                return metaObj;
-            }
-        }
+        return metaObj;
     }
-    return FetchECSMeta();
+    return metaObj;
 }
 
 ECSMeta HostIdentifier::FetchECSMeta() {
@@ -717,7 +687,7 @@ ECSMeta HostIdentifier::FetchECSMeta() {
             curl_easy_cleanup(curl);
             return metaObj;
         }
-        metadataStr = meta;
+        mMetadataStr = meta;
         curl_easy_cleanup(curl);
         return metaObj;
     }
@@ -731,7 +701,7 @@ void HostIdentifier::DumpECSMeta() {
     static std::string fileName
         = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
     std::string errMsg;
-    if (!WriteFile(fileName, metadataStr, errMsg)) {
+    if (!WriteFile(fileName, mMetadataStr, errMsg)) {
         LOG_WARNING(sLogger, ("failed to write ecs meta to file", fileName)("error", errMsg));
     }
 }

@@ -29,16 +29,10 @@ struct ECSMeta {
     std::string regionID;
     std::string mac;
 };
-
-struct NicInfo {
-    std::unordered_set<std::string> ipSet;
-    std::unordered_set<std::string> macSet;
-};
 std::string GetOsDetail();
 std::string GetUsername();
 std::string GetHostName();
 std::string GetHostIpByHostName();
-NicInfo GetNicInfo();
 std::string GetHostIpByInterface(const std::string& intf);
 uint32_t GetHostIpValueByInterface(const std::string& intf);
 std::string GetHostIp(const std::string& intf = "");
@@ -68,20 +62,20 @@ public:
         Type type;
     };
     const HostIdentifier::Hostid& GetHostId() {
-        std::lock_guard<std::mutex> lock(mutex);
-        return hostid;
+        std::lock_guard<std::mutex> lock(mMutex);
+        return mHostid;
     }
     const ECSMeta& GetECSMeta() {
-        std::lock_guard<std::mutex> lock(mutex);
-        return metadata;
+        std::lock_guard<std::mutex> lock(mMutex);
+        return mMetadata;
     }
     void SetECSMeta(const ECSMeta& meta) {
-        std::lock_guard<std::mutex> lock(mutex);
-        metadata = meta;
+        std::lock_guard<std::mutex> lock(mMutex);
+        mMetadata = meta;
     }
     void SetHostId(const Hostid& hostid) {
-        std::lock_guard<std::mutex> lock(mutex);
-        this->hostid = hostid;
+        std::lock_guard<std::mutex> lock(mMutex);
+        mHostid = hostid;
     }
 
     HostIdentifier();
@@ -93,10 +87,10 @@ public:
     void DumpECSMeta();
 
 private:
-    std::mutex mutex;
-    Hostid hostid;
-    ECSMeta metadata;
-    std::string metadataStr;
+    std::mutex mMutex;
+    Hostid mHostid;
+    ECSMeta mMetadata;
+    std::string mMetadataStr;
 
     // 从云助手获取序列号
     std::string GetSerialNumberFromEcsAssist(const std::string& machineIdFile);
