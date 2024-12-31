@@ -267,6 +267,23 @@ std::string GetAgentLogDir() {
     return dir;
 }
 
+std::string GetAgentGoLogConfDir() {
+    static std::string dir;
+    if (!dir.empty()) {
+        return dir;
+    }
+#if defined(APSARA_UNIT_TEST_MAIN)
+    dir = GetProcessExecutionDir();
+#else
+    if (BOOL_FLAG(logtail_mode)) {
+        dir = GetProcessExecutionDir();
+    } else {
+        return AppConfig::GetInstance()->GetLoongcollectorConfDir();
+    }
+#endif
+    return dir;
+}
+
 std::string GetAgentGoCheckpointDir() {
     static std::string dir;
     if (!dir.empty()) {

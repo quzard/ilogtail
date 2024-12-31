@@ -40,6 +40,7 @@ std::string GetAgentRunDir();
 std::string GetAgentThirdPartyDir();
 
 std::string GetAgentGoCheckpointDir();
+std::string GetAgentGoLogConfDir();
 std::string GetAgentConfigFile();
 std::string GetAgentAppInfoFile();
 std::string GetAdhocCheckpointDirPath();

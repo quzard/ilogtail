@@ -30,6 +30,8 @@ type GlobalConfig struct {
 	Tags                        map[string]string
 	// Directory to store loongcollector data, such as checkpoint, etc.
 	LoongcollectorConfDir string
+	// Directory to store loongcollector log config.
+	LoongcollectorLogConfDir string
 	// Directory to store loongcollector log.
 	LoongcollectorLogDir string
 	// Directory to store loongcollector data.
@@ -72,6 +74,7 @@ func newGlobalConfig() (cfg GlobalConfig) {
 		DefaultLogQueueSize:          1000,
 		DefaultLogGroupQueueSize:     4,
 		LoongcollectorConfDir:        "./conf/",
+		LoongcollectorLogConfDir:     "./conf/",
 		LoongcollectorLogDir:         "./log/",
 		LoongcollectorPluginLogName:  "go_plugin.LOG",
 		LoongcollectorVersionTag:     "loongcollector_version",
