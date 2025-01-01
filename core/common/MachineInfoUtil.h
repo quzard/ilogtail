@@ -84,16 +84,22 @@ public:
 private:
     void getECSMetaFromFile();
     // 从云助手获取序列号
-    std::string getSerialNumberFromEcsAssist(const std::string& machineIdFile);
-    std::string getEcsAssistMachineIdFile();
-    std::string getSerialNumberFromEcsAssist();
+    void getSerialNumberFromEcsAssist();
     // 从本地文件获取hostid
-    std::string getLocalHostId();
+    void getLocalHostId();
 
     void updateHostId();
     void setHostId(const Hostid& hostid);
 
     std::shared_mutex mMutex;
+
+#if defined(_MSC_VER)
+    std::string mEcsAssistMachineIdFile = "C:\\ProgramData\\aliyun\\assist\\hybrid\\machine-id";
+#else
+    std::string mEcsAssistMachineIdFile = "/usr/local/share/aliyun-assist/hybrid/machine-id";
+#endif
+    bool mHasTriedToGetSerialNumber = false;
+    std::string mSerialNumber;
 
     Hostid mHostid;
 
@@ -101,9 +107,6 @@ private:
     std::string mMetadataStr;
 
     std::string mLocalHostId;
-
-    bool mHasTriedToGetSerialNumber = false;
-    std::string mSerialNumber;
 };
 
 } // namespace logtail

@@ -542,23 +542,21 @@ void HostIdentifier::DumpECSMeta() {
 }
 
 void HostIdentifier::updateHostId() {
-    std::string hostId = STRING_FLAG(agent_host_id);
-    if (!hostId.empty()) {
-        setHostId(Hostid{hostId, Type::CUSTOM});
+    if (!STRING_FLAG(agent_host_id).empty()) {
+        setHostId(Hostid{STRING_FLAG(agent_host_id), Type::CUSTOM});
         return;
     }
-    hostId = mMetadata.instanceID;
-    if (mMetadata.isValid && !hostId.empty()) {
-        setHostId(Hostid{hostId, Type::ECS});
+    if (mMetadata.isValid && !mMetadata.instanceID.empty()) {
+        setHostId(Hostid{mMetadata.instanceID, Type::ECS});
         return;
     }
-    hostId = getSerialNumberFromEcsAssist();
-    if (!hostId.empty()) {
-        setHostId(Hostid{hostId, Type::ECS_ASSIST});
+    getSerialNumberFromEcsAssist();
+    if (!mSerialNumber.empty()) {
+        setHostId(Hostid{mSerialNumber, Type::ECS_ASSIST});
         return;
     }
-    hostId = getLocalHostId();
-    setHostId(Hostid{hostId, Type::LOCAL});
+    getLocalHostId();
+    setHostId(Hostid{mLocalHostId, Type::LOCAL});
 }
 
 void HostIdentifier::setHostId(const Hostid& hostid) {
@@ -687,35 +685,22 @@ bool HostIdentifier::FetchECSMeta(ECSMeta& metaObj) {
 }
 
 // 从云助手获取序列号
-std::string HostIdentifier::getSerialNumberFromEcsAssist(const std::string& machineIdFile) {
-    std::string sn;
-    if (CheckExistance(machineIdFile)) {
-        if (!ReadFileContent(machineIdFile, sn)) {
-            return "";
+void HostIdentifier::getSerialNumberFromEcsAssist() {
+    if (mHasTriedToGetSerialNumber) {
+        return;
+    }
+    if (CheckExistance(mEcsAssistMachineIdFile)) {
+        if (!ReadFileContent(mEcsAssistMachineIdFile, mSerialNumber)) {
+            mSerialNumber = "";
         }
     }
-    return sn;
-}
-std::string HostIdentifier::getEcsAssistMachineIdFile() {
-#if defined(_MSC_VER)
-    return "C:\\ProgramData\\aliyun\\assist\\hybrid\\machine-id";
-#else
-    return "/usr/local/share/aliyun-assist/hybrid/machine-id";
-#endif
-}
-std::string HostIdentifier::getSerialNumberFromEcsAssist() {
-    if (mHasTriedToGetSerialNumber) {
-        return mSerialNumber;
-    }
-    mSerialNumber = getSerialNumberFromEcsAssist(getEcsAssistMachineIdFile());
     mHasTriedToGetSerialNumber = true;
-    return mSerialNumber;
 }
 
-std::string HostIdentifier::getLocalHostId() {
+void HostIdentifier::getLocalHostId() {
     std::string fileName = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "host_id";
     if (!mLocalHostId.empty()) {
-        return mLocalHostId;
+        return;
     }
     if (CheckExistance(fileName)) {
         if (!ReadFileContent(fileName, mLocalHostId)) {
@@ -745,7 +730,6 @@ std::string HostIdentifier::getLocalHostId() {
             close(fd);
         }
     }
-    return mLocalHostId;
 }
 
 } // namespace logtail
