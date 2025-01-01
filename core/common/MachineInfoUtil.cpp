@@ -516,6 +516,21 @@ HostIdentifier::HostIdentifier() {
 #endif
 }
 
+bool HostIdentifier::UpdateECSMetaAndHostid(const ECSMeta& meta) {
+    // 如果 instanceID 发生变化，则更新ecs元数据
+    if (mMetadata.instanceID != meta.instanceID) {
+        LOG_INFO(sLogger,
+                 ("ecs instanceID changed, old instanceID", mMetadata.instanceID)("new instanceID", meta.instanceID));
+        {
+            std::unique_lock<std::shared_mutex> lock(mMutex); // 写锁
+            mMetadata = meta;
+        }
+        UpdateHostId();
+        return true;
+    }
+    return false;
+}
+
 void HostIdentifier::DumpECSMeta() {
     std::string fileName = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
     std::string errMsg;

@@ -58,27 +58,26 @@ public:
         std::string id;
         Type type;
     };
-    HostIdentifier::Hostid GetHostId() {
-        std::shared_lock<std::shared_mutex> lock(mMutex); // 读锁
-        return mHostid;
-    }
-    ECSMeta GetECSMeta() {
-        std::shared_lock<std::shared_mutex> lock(mMutex); // 读锁
-        return mMetadata;
-    }
-    void UpdateECSMetaAndHostid(const ECSMeta& meta) {
-        {
-            std::unique_lock<std::shared_mutex> lock(mMutex); // 写锁
-            mMetadata = meta;
-        }
-        UpdateHostId();
-    }
-
     HostIdentifier();
     static HostIdentifier* Instance() {
         static HostIdentifier instance;
         return &instance;
     }
+    // 注意: 不要在类初始化时调用并缓存结果，因为此时ECS元数据可能尚未就绪
+    // 建议在实际使用时再调用此方法
+    HostIdentifier::Hostid GetHostId() {
+        std::shared_lock<std::shared_mutex> lock(mMutex); // 获取读锁
+        return mHostid;
+    }
+
+    // 注意: 不要在类初始化时调用并缓存结果，因为此时ECS元数据可能尚未就绪
+    // 建议在实际使用时再调用此方法
+    ECSMeta GetECSMeta() {
+        std::shared_lock<std::shared_mutex> lock(mMutex); // 获取读锁
+        return mMetadata;
+    }
+
+    bool UpdateECSMetaAndHostid(const ECSMeta& meta);
     bool FetchECSMeta(ECSMeta& metaObj);
     void DumpECSMeta();
 
