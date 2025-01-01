@@ -507,7 +507,7 @@ size_t FetchECSMetaCallback(char* buffer, size_t size, size_t nmemb, std::string
 HostIdentifier::HostIdentifier() {
 #ifdef __ENTERPRISE__
     getECSMetaFromFile();
-    UpdateHostId();
+    updateHostId();
 #else
     ECSMeta ecsMeta;
     if (HostIdentifier::Instance()->FetchECSMeta(ecsMeta)) {
@@ -525,7 +525,7 @@ bool HostIdentifier::UpdateECSMetaAndHostid(const ECSMeta& meta) {
             std::unique_lock<std::shared_mutex> lock(mMutex); // 写锁
             mMetadata = meta;
         }
-        UpdateHostId();
+        updateHostId();
         return true;
     }
     return false;
@@ -541,28 +541,28 @@ void HostIdentifier::DumpECSMeta() {
     }
 }
 
-void HostIdentifier::UpdateHostId() {
+void HostIdentifier::updateHostId() {
     std::string hostId;
     hostId = STRING_FLAG(agent_host_id);
     if (!hostId.empty()) {
-        SetHostId(Hostid{hostId, Type::CUSTOM});
+        setHostId(Hostid{hostId, Type::CUSTOM});
         return;
     }
     hostId = mMetadata.instanceID;
     if (!hostId.empty()) {
-        SetHostId(Hostid{hostId, Type::ECS});
+        setHostId(Hostid{hostId, Type::ECS});
         return;
     }
-    hostId = GetSerialNumberFromEcsAssist();
+    hostId = getSerialNumberFromEcsAssist();
     if (!hostId.empty()) {
-        SetHostId(Hostid{hostId, Type::ECS_ASSIST});
+        setHostId(Hostid{hostId, Type::ECS_ASSIST});
         return;
     }
-    hostId = GetLocalHostId();
-    SetHostId(Hostid{hostId, Type::LOCAL});
+    hostId = getLocalHostId();
+    setHostId(Hostid{hostId, Type::LOCAL});
 }
 
-void HostIdentifier::SetHostId(const Hostid& hostid) {
+void HostIdentifier::setHostId(const Hostid& hostid) {
     if (mHostid.id == hostid.id && mHostid.type == hostid.type) {
         return;
     }
@@ -690,7 +690,7 @@ bool HostIdentifier::FetchECSMeta(ECSMeta& metaObj) {
 }
 
 // 从云助手获取序列号
-std::string HostIdentifier::GetSerialNumberFromEcsAssist(const std::string& machineIdFile) {
+std::string HostIdentifier::getSerialNumberFromEcsAssist(const std::string& machineIdFile) {
     std::string sn;
     if (CheckExistance(machineIdFile)) {
         if (!ReadFileContent(machineIdFile, sn)) {
@@ -699,23 +699,23 @@ std::string HostIdentifier::GetSerialNumberFromEcsAssist(const std::string& mach
     }
     return sn;
 }
-std::string HostIdentifier::GetEcsAssistMachineIdFile() {
+std::string HostIdentifier::getEcsAssistMachineIdFile() {
 #if defined(_MSC_VER)
     return "C:\\ProgramData\\aliyun\\assist\\hybrid\\machine-id";
 #else
     return "/usr/local/share/aliyun-assist/hybrid/machine-id";
 #endif
 }
-std::string HostIdentifier::GetSerialNumberFromEcsAssist() {
+std::string HostIdentifier::getSerialNumberFromEcsAssist() {
     if (mHasTriedToGetSerialNumber) {
         return mSerialNumber;
     }
-    mSerialNumber = GetSerialNumberFromEcsAssist(GetEcsAssistMachineIdFile());
+    mSerialNumber = getSerialNumberFromEcsAssist(getEcsAssistMachineIdFile());
     mHasTriedToGetSerialNumber = true;
     return mSerialNumber;
 }
 
-std::string HostIdentifier::GetLocalHostId() {
+std::string HostIdentifier::getLocalHostId() {
     std::string fileName = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "host_id";
     if (!mLocalHostId.empty()) {
         return mLocalHostId;

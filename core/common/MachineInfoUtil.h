@@ -60,8 +60,8 @@ public:
     };
     HostIdentifier();
     static HostIdentifier* Instance() {
-        static HostIdentifier instance;
-        return &instance;
+        static HostIdentifier sInstance;
+        return &sInstance;
     }
     // 注意: 不要在类初始化时调用并缓存结果，因为此时ECS元数据可能尚未就绪
     // 建议在实际使用时再调用此方法
@@ -82,26 +82,28 @@ public:
     void DumpECSMeta();
 
 private:
+    void getECSMetaFromFile();
+    // 从云助手获取序列号
+    std::string getSerialNumberFromEcsAssist(const std::string& machineIdFile);
+    std::string getEcsAssistMachineIdFile();
+    std::string getSerialNumberFromEcsAssist();
+    // 从本地文件获取hostid
+    std::string getLocalHostId();
+
+    void updateHostId();
+    void setHostId(const Hostid& hostid);
+
     std::shared_mutex mMutex;
+
     Hostid mHostid;
+
     ECSMeta mMetadata;
     std::string mMetadataStr;
+
     std::string mLocalHostId;
 
     bool mHasTriedToGetSerialNumber = false;
     std::string mSerialNumber;
-
-    void getECSMetaFromFile();
-    // 从云助手获取序列号
-    std::string GetSerialNumberFromEcsAssist(const std::string& machineIdFile);
-    std::string GetEcsAssistMachineIdFile();
-    std::string GetSerialNumberFromEcsAssist();
-    // 从本地文件获取hostid
-    std::string GetLocalHostId();
-
-    void UpdateHostId();
-
-    void SetHostId(const Hostid& hostid);
 };
 
 } // namespace logtail
