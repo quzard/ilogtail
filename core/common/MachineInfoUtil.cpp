@@ -503,56 +503,20 @@ size_t FetchECSMetaCallback(char* buffer, size_t size, size_t nmemb, std::string
     return sizes;
 }
 
-// 从云助手获取序列号
-std::string HostIdentifier::GetSerialNumberFromEcsAssist(const std::string& machineIdFile) {
-    std::string sn;
-    if (CheckExistance(machineIdFile)) {
-        if (!ReadFileContent(machineIdFile, sn)) {
-            return "";
-        }
-    }
-    return sn;
-}
-
-const std::string& HostIdentifier::GetLocalHostId() {
-    static std::string fileName = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "host_id";
-    static std::string hostId;
-    if (!hostId.empty()) {
-        return hostId;
-    }
-    if (CheckExistance(fileName)) {
-        if (!ReadFileContent(fileName, hostId)) {
-            hostId = "";
-        }
-    }
-    if (hostId.empty()) {
-        hostId = RandomHostid();
-
-        LOG_INFO(sLogger, ("save hostId file to local file system, hostId", hostId));
-        int fd = open(fileName.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0755);
-        if (fd == -1) {
-            int savedErrno = errno;
-            if (savedErrno != EEXIST) {
-                LOG_ERROR(sLogger, ("save hostId file fail", fileName)("errno", strerror(savedErrno)));
-            }
-        } else {
-            // 文件成功创建,现在写入hostId
-            ssize_t written = write(fd, hostId.c_str(), hostId.length());
-            if (written == static_cast<ssize_t>(hostId.length())) {
-                LOG_INFO(sLogger, ("hostId saved successfully to", fileName));
-            } else {
-                int writeErrno = errno;
-                LOG_ERROR(sLogger, ("Failed to write hostId to file", fileName)("errno", strerror(writeErrno)));
-            }
-            close(fd);
-        }
-    }
-    return hostId;
-}
-
 HostIdentifier::HostIdentifier() {
     mMetadata = GetECSMetaFromFile();
     UpdateHostId();
+}
+
+void HostIdentifier::DumpECSMeta() {
+    static std::string fileName
+        = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
+    std::string errMsg;
+    if (!WriteFile(fileName, mMetadataStr, errMsg)) {
+        LOG_WARNING(sLogger, ("failed to write ecs meta to file", fileName)("error", errMsg));
+    } else {
+        LOG_INFO(sLogger, ("write ecs meta to file success, fileName", fileName)("mMetadataStr", mMetadataStr));
+    }
 }
 
 void HostIdentifier::UpdateHostId() {
@@ -614,7 +578,6 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
     return true;
 }
 
-
 ECSMeta HostIdentifier::GetECSMetaFromFile() {
     ECSMeta metaObj;
     static std::string fileName
@@ -631,7 +594,8 @@ ECSMeta HostIdentifier::GetECSMetaFromFile() {
     return metaObj;
 }
 
-ECSMeta HostIdentifier::FetchECSMeta() {
+bool HostIdentifier::FetchECSMeta(ECSMeta& metaObj) {
+    metaObj.isValid = false;
     CURL* curl = nullptr;
     for (size_t retryTimes = 1; retryTimes <= 5; retryTimes++) {
         curl = curl_easy_init();
@@ -640,13 +604,12 @@ ECSMeta HostIdentifier::FetchECSMeta() {
         }
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-    ECSMeta metaObj;
     if (curl) {
         std::string token;
         auto* tokenHeaders = curl_slist_append(nullptr, "X-aliyun-ecs-metadata-token-ttl-seconds:3600");
         if (!tokenHeaders) {
             curl_easy_cleanup(curl);
-            return metaObj;
+            return false;
         }
         curl_easy_setopt(curl, CURLOPT_URL, "http://100.100.100.200/latest/api/token");
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
@@ -663,7 +626,7 @@ ECSMeta HostIdentifier::FetchECSMeta() {
         if (res != CURLE_OK) {
             LOG_INFO(sLogger, ("fetch ecs token fail", curl_easy_strerror(res)));
             curl_easy_cleanup(curl);
-            return metaObj;
+            return false;
         }
 
         // Get metadata with token
@@ -671,7 +634,7 @@ ECSMeta HostIdentifier::FetchECSMeta() {
         auto* metaHeaders = curl_slist_append(nullptr, ("X-aliyun-ecs-metadata-token: " + token).c_str());
         if (!metaHeaders) {
             curl_easy_cleanup(curl);
-            return metaObj;
+            return false;
         }
 
         curl_easy_reset(curl);
@@ -689,31 +652,83 @@ ECSMeta HostIdentifier::FetchECSMeta() {
         if (res != CURLE_OK) {
             LOG_INFO(sLogger, ("fetch ecs meta fail", curl_easy_strerror(res)));
             curl_easy_cleanup(curl);
-            return metaObj;
+            return false;
         }
         if (!ParseECSMeta(meta, metaObj)) {
             curl_easy_cleanup(curl);
-            return metaObj;
+            return false;
         }
         mMetadataStr = meta;
+        metaObj.isValid = true;
         curl_easy_cleanup(curl);
-        return metaObj;
+        return true;
     }
     LOG_WARNING(
         sLogger,
         ("curl handler cannot be initialized during user environment identification", "ecs meta may be mislabeled"));
-    return metaObj;
+    return false;
 }
 
-void HostIdentifier::DumpECSMeta() {
-    static std::string fileName
-        = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
-    std::string errMsg;
-    if (!WriteFile(fileName, mMetadataStr, errMsg)) {
-        LOG_WARNING(sLogger, ("failed to write ecs meta to file", fileName)("error", errMsg));
-    } else {
-        LOG_INFO(sLogger, ("write ecs meta to file success, fileName", fileName)("mMetadataStr", mMetadataStr));
+// 从云助手获取序列号
+std::string HostIdentifier::GetSerialNumberFromEcsAssist(const std::string& machineIdFile) {
+    std::string sn;
+    if (CheckExistance(machineIdFile)) {
+        if (!ReadFileContent(machineIdFile, sn)) {
+            return "";
+        }
     }
+    return sn;
+}
+std::string HostIdentifier::GetEcsAssistMachineIdFile() {
+#if defined(_MSC_VER)
+    return "C:\\ProgramData\\aliyun\\assist\\hybrid\\machine-id";
+#else
+    return "/usr/local/share/aliyun-assist/hybrid/machine-id";
+#endif
+}
+std::string HostIdentifier::GetSerialNumberFromEcsAssist() {
+    return GetSerialNumberFromEcsAssist(GetEcsAssistMachineIdFile());
+}
+
+// 随机生成hostid
+std::string HostIdentifier::RandomHostid() {
+    static std::string hostId = CalculateRandomUUID();
+    return hostId;
+}
+const std::string& HostIdentifier::GetLocalHostId() {
+    static std::string fileName = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "host_id";
+    static std::string hostId;
+    if (!hostId.empty()) {
+        return hostId;
+    }
+    if (CheckExistance(fileName)) {
+        if (!ReadFileContent(fileName, hostId)) {
+            hostId = "";
+        }
+    }
+    if (hostId.empty()) {
+        hostId = RandomHostid();
+
+        LOG_INFO(sLogger, ("save hostId file to local file system, hostId", hostId));
+        int fd = open(fileName.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0755);
+        if (fd == -1) {
+            int savedErrno = errno;
+            if (savedErrno != EEXIST) {
+                LOG_ERROR(sLogger, ("save hostId file fail", fileName)("errno", strerror(savedErrno)));
+            }
+        } else {
+            // 文件成功创建,现在写入hostId
+            ssize_t written = write(fd, hostId.c_str(), hostId.length());
+            if (written == static_cast<ssize_t>(hostId.length())) {
+                LOG_INFO(sLogger, ("hostId saved successfully to", fileName));
+            } else {
+                int writeErrno = errno;
+                LOG_ERROR(sLogger, ("Failed to write hostId to file", fileName)("errno", strerror(writeErrno)));
+            }
+            close(fd);
+        }
+    }
+    return hostId;
 }
 
 } // namespace logtail

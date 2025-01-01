@@ -79,7 +79,7 @@ public:
         static HostIdentifier instance;
         return &instance;
     }
-    ECSMeta FetchECSMeta();
+    bool FetchECSMeta(ECSMeta& metaObj);
     void DumpECSMeta();
 
 private:
@@ -88,24 +88,15 @@ private:
     ECSMeta mMetadata;
     std::string mMetadataStr;
 
+    ECSMeta GetECSMetaFromFile();
     // 从云助手获取序列号
     std::string GetSerialNumberFromEcsAssist(const std::string& machineIdFile);
-    static std::string GetEcsAssistMachineIdFile() {
-#if defined(_MSC_VER)
-        return "C:\\ProgramData\\aliyun\\assist\\hybrid\\machine-id";
-#else
-        return "/usr/local/share/aliyun-assist/hybrid/machine-id";
-#endif
-    }
-    std::string GetSerialNumberFromEcsAssist() { return GetSerialNumberFromEcsAssist(GetEcsAssistMachineIdFile()); }
-    std::string RandomHostid() {
-        static std::string hostId = CalculateRandomUUID();
-        return hostId;
-    }
+    static std::string GetEcsAssistMachineIdFile();
+    std::string GetSerialNumberFromEcsAssist();
+    std::string RandomHostid();
     const std::string& GetLocalHostId();
 
     void SetHostId(const Hostid& hostid);
-    ECSMeta GetECSMetaFromFile();
 };
 
 } // namespace logtail
