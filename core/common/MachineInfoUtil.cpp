@@ -504,13 +504,19 @@ size_t FetchECSMetaCallback(char* buffer, size_t size, size_t nmemb, std::string
 }
 
 HostIdentifier::HostIdentifier() {
-    mMetadata = GetECSMetaFromFile();
+#ifdef __ENTERPRISE__
+    getECSMetaFromFile();
     UpdateHostId();
+#else
+    ECSMeta ecsMeta;
+    if (HostIdentifier::Instance()->FetchECSMeta(ecsMeta)) {
+        UpdateECSMetaAndHostid(ecsMeta);
+    }
+#endif
 }
 
 void HostIdentifier::DumpECSMeta() {
-    static std::string fileName
-        = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
+    std::string fileName = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
     std::string errMsg;
     if (!WriteFile(fileName, mMetadataStr, errMsg)) {
         LOG_WARNING(sLogger, ("failed to write ecs meta to file", fileName)("error", errMsg));
@@ -541,12 +547,12 @@ void HostIdentifier::UpdateHostId() {
 }
 
 void HostIdentifier::SetHostId(const Hostid& hostid) {
-    std::lock_guard<std::mutex> lock(mMutex);
     if (mHostid.id == hostid.id && mHostid.type == hostid.type) {
         return;
     }
     LOG_INFO(sLogger,
              ("change hostId, id from", mHostid.id)("to", hostid.id)("type from", mHostid.type)("to", hostid.type));
+    std::lock_guard<std::mutex> lock(mMutex);
     mHostid = hostid;
 }
 
@@ -578,20 +584,18 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
     return true;
 }
 
-ECSMeta HostIdentifier::GetECSMetaFromFile() {
-    ECSMeta metaObj;
-    static std::string fileName
-        = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
+void HostIdentifier::getECSMetaFromFile() {
+    std::string fileName = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "instance_identity";
     if (!CheckExistance(fileName)) {
-        return metaObj;
+        return;
     }
     std::string ecsMetaStr;
-    if (ReadFileContent(fileName, ecsMetaStr) && ParseECSMeta(ecsMetaStr, metaObj)) {
-        return metaObj;
+    if (ReadFileContent(fileName, ecsMetaStr) && ParseECSMeta(ecsMetaStr, mMetadata)) {
+        return;
     } else {
         LOG_ERROR(sLogger, ("read ecs meta from file fail", fileName)("ecs meta", ecsMetaStr));
     }
-    return metaObj;
+    return;
 }
 
 bool HostIdentifier::FetchECSMeta(ECSMeta& metaObj) {
@@ -687,29 +691,29 @@ std::string HostIdentifier::GetEcsAssistMachineIdFile() {
 #endif
 }
 std::string HostIdentifier::GetSerialNumberFromEcsAssist() {
-    return GetSerialNumberFromEcsAssist(GetEcsAssistMachineIdFile());
+    if (mHasTriedToGetSerialNumber) {
+        return mSerialNumber;
+    }
+    mSerialNumber = GetSerialNumberFromEcsAssist(GetEcsAssistMachineIdFile());
+    mHasTriedToGetSerialNumber = true;
+    return mSerialNumber;
 }
 
-// 随机生成hostid
-std::string HostIdentifier::RandomHostid() {
-    static std::string hostId = CalculateRandomUUID();
-    return hostId;
-}
-const std::string& HostIdentifier::GetLocalHostId() {
-    static std::string fileName = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "host_id";
-    static std::string hostId;
-    if (!hostId.empty()) {
-        return hostId;
+std::string HostIdentifier::GetLocalHostId() {
+    std::string fileName = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "host_id";
+    if (!mLocalHostId.empty()) {
+        return mLocalHostId;
     }
     if (CheckExistance(fileName)) {
-        if (!ReadFileContent(fileName, hostId)) {
-            hostId = "";
+        if (!ReadFileContent(fileName, mLocalHostId)) {
+            mLocalHostId = "";
         }
     }
-    if (hostId.empty()) {
-        hostId = RandomHostid();
+    if (mLocalHostId.empty()) {
+        // 随机生成hostid
+        mLocalHostId = CalculateRandomUUID();
 
-        LOG_INFO(sLogger, ("save hostId file to local file system, hostId", hostId));
+        LOG_INFO(sLogger, ("save hostId file to local file system, hostId", mLocalHostId));
         int fd = open(fileName.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0755);
         if (fd == -1) {
             int savedErrno = errno;
@@ -718,8 +722,8 @@ const std::string& HostIdentifier::GetLocalHostId() {
             }
         } else {
             // 文件成功创建,现在写入hostId
-            ssize_t written = write(fd, hostId.c_str(), hostId.length());
-            if (written == static_cast<ssize_t>(hostId.length())) {
+            ssize_t written = write(fd, mLocalHostId.c_str(), mLocalHostId.length());
+            if (written == static_cast<ssize_t>(mLocalHostId.length())) {
                 LOG_INFO(sLogger, ("hostId saved successfully to", fileName));
             } else {
                 int writeErrno = errno;
@@ -728,7 +732,7 @@ const std::string& HostIdentifier::GetLocalHostId() {
             close(fd);
         }
     }
-    return hostId;
+    return mLocalHostId;
 }
 
 } // namespace logtail

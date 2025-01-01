@@ -60,19 +60,21 @@ public:
         std::string id;
         Type type;
     };
-    const HostIdentifier::Hostid& GetHostId() {
+    HostIdentifier::Hostid GetHostId() {
         std::lock_guard<std::mutex> lock(mMutex);
         return mHostid;
     }
-    const ECSMeta& GetECSMeta() {
+    ECSMeta GetECSMeta() {
         std::lock_guard<std::mutex> lock(mMutex);
         return mMetadata;
     }
-    void SetECSMeta(const ECSMeta& meta) {
-        std::lock_guard<std::mutex> lock(mMutex);
-        mMetadata = meta;
+    void UpdateECSMetaAndHostid(const ECSMeta& meta) {
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            mMetadata = meta;
+        }
+        UpdateHostId();
     }
-    void UpdateHostId();
 
     HostIdentifier();
     static HostIdentifier* Instance() {
@@ -87,14 +89,20 @@ private:
     Hostid mHostid;
     ECSMeta mMetadata;
     std::string mMetadataStr;
+    std::string mLocalHostId;
 
-    ECSMeta GetECSMetaFromFile();
+    bool mHasTriedToGetSerialNumber = false;
+    std::string mSerialNumber;
+
+    void getECSMetaFromFile();
     // 从云助手获取序列号
     std::string GetSerialNumberFromEcsAssist(const std::string& machineIdFile);
-    static std::string GetEcsAssistMachineIdFile();
+    std::string GetEcsAssistMachineIdFile();
     std::string GetSerialNumberFromEcsAssist();
-    std::string RandomHostid();
-    const std::string& GetLocalHostId();
+    // 从本地文件获取hostid
+    std::string GetLocalHostId();
+
+    void UpdateHostId();
 
     void SetHostId(const Hostid& hostid);
 };
