@@ -510,7 +510,7 @@ HostIdentifier::HostIdentifier() {
     updateHostId();
 #else
     ECSMeta ecsMeta;
-    if (HostIdentifier::Instance()->FetchECSMeta(ecsMeta)) {
+    if (FetchECSMeta(ecsMeta)) {
         UpdateECSMetaAndHostid(ecsMeta);
     }
 #endif
