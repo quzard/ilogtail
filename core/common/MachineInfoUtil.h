@@ -15,11 +15,9 @@
  */
 
 #pragma once
-#include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <unordered_set>
-
-#include "common/UUIDUtil.h"
 
 namespace logtail {
 
@@ -61,16 +59,16 @@ public:
         Type type;
     };
     HostIdentifier::Hostid GetHostId() {
-        std::lock_guard<std::mutex> lock(mMutex);
+        std::shared_lock<std::shared_mutex> lock(mMutex); // 读锁
         return mHostid;
     }
     ECSMeta GetECSMeta() {
-        std::lock_guard<std::mutex> lock(mMutex);
+        std::shared_lock<std::shared_mutex> lock(mMutex); // 读锁
         return mMetadata;
     }
     void UpdateECSMetaAndHostid(const ECSMeta& meta) {
         {
-            std::lock_guard<std::mutex> lock(mMutex);
+            std::unique_lock<std::shared_mutex> lock(mMutex); // 写锁
             mMetadata = meta;
         }
         UpdateHostId();
@@ -85,7 +83,7 @@ public:
     void DumpECSMeta();
 
 private:
-    std::mutex mMutex;
+    std::shared_mutex mMutex;
     Hostid mHostid;
     ECSMeta mMetadata;
     std::string mMetadataStr;

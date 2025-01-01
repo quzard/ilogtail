@@ -46,6 +46,7 @@
 #include "FileSystemUtil.h"
 #include "StringTools.h"
 #include "common/FileSystemUtil.h"
+#include "common/UUIDUtil.h"
 #include "logger/Logger.h"
 
 DEFINE_FLAG_STRING(agent_host_id, "", "");
@@ -552,7 +553,7 @@ void HostIdentifier::SetHostId(const Hostid& hostid) {
     }
     LOG_INFO(sLogger,
              ("change hostId, id from", mHostid.id)("to", hostid.id)("type from", mHostid.type)("to", hostid.type));
-    std::lock_guard<std::mutex> lock(mMutex);
+    std::unique_lock<std::shared_mutex> lock(mMutex); // 写锁
     mHostid = hostid;
 }
 
