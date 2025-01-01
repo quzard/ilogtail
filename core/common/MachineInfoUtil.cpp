@@ -678,7 +678,7 @@ bool HostIdentifier::FetchECSMeta(ECSMeta& metaObj) {
         }
         mMetadataStr = meta;
         curl_easy_cleanup(curl);
-        return true;
+        return metaObj.isValid;
     }
     LOG_WARNING(
         sLogger,
