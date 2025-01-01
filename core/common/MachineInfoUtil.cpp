@@ -542,14 +542,13 @@ void HostIdentifier::DumpECSMeta() {
 }
 
 void HostIdentifier::updateHostId() {
-    std::string hostId;
-    hostId = STRING_FLAG(agent_host_id);
+    std::string hostId = STRING_FLAG(agent_host_id);
     if (!hostId.empty()) {
         setHostId(Hostid{hostId, Type::CUSTOM});
         return;
     }
     hostId = mMetadata.instanceID;
-    if (!hostId.empty()) {
+    if (mMetadata.isValid && !hostId.empty()) {
         setHostId(Hostid{hostId, Type::ECS});
         return;
     }
@@ -611,7 +610,6 @@ void HostIdentifier::getECSMetaFromFile() {
     } else {
         LOG_ERROR(sLogger, ("read ecs meta from file fail", fileName)("ecs meta", ecsMetaStr));
     }
-    return;
 }
 
 bool HostIdentifier::FetchECSMeta(ECSMeta& metaObj) {
@@ -679,7 +677,6 @@ bool HostIdentifier::FetchECSMeta(ECSMeta& metaObj) {
             return false;
         }
         mMetadataStr = meta;
-        metaObj.isValid = true;
         curl_easy_cleanup(curl);
         return true;
     }
