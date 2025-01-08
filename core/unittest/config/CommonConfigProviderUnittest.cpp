@@ -701,7 +701,12 @@ void CommonConfigProviderUnittest::TestGetConfigUpdateAndConfigWatcher() {
         // 再次处理instanceConfigDiff
         instanceConfigDiff = InstanceConfigWatcher::GetInstance()->CheckConfigDiff();
         InstanceConfigManager::GetInstance()->UpdateInstanceConfigs(instanceConfigDiff);
-        APSARA_TEST_TRUE(!InstanceConfigManager::GetInstance()->GetAllConfigNames().empty());
+#ifdef __ENTERPRISE__
+        APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames().size(), 0);
+#else
+        APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames().size(), 1);
+        APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames()[0], "loongcollector_config");
+#endif
         APSARA_TEST_TRUE(instanceConfigDiff.IsEmpty());
         APSARA_TEST_TRUE(instanceConfigDiff.mRemoved.empty());
 
