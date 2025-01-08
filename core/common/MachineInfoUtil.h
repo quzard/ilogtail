@@ -81,10 +81,11 @@ public:
     }
 
     bool UpdateECSMetaAndHostid(const ECSMeta& meta);
-    bool FetchECSMeta(ECSMeta& metaObj);
     void DumpECSMeta();
 
 private:
+    bool FetchECSMeta(ECSMeta& metaObj);
+
     void getECSMetaFromFile();
     // 从云助手获取序列号
     void getSerialNumberFromEcsAssist();
@@ -110,6 +111,9 @@ private:
     std::string mMetadataStr;
 
     std::string mLocalHostId;
+#ifdef __ENTERPRISE__
+    friend class EnterpriseConfigProvider;
+#endif
 };
 
 } // namespace logtail
