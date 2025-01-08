@@ -505,10 +505,7 @@ HostIdentifier::HostIdentifier() {
 #ifdef __ENTERPRISE__
     getECSMetaFromFile();
 #else
-    ECSMeta ecsMeta;
-    if (FetchECSMeta(ecsMeta)) {
-        UpdateECSMetaAndHostid(ecsMeta);
-    }
+    FetchECSMeta(mMetadata);
 #endif
     updateHostId();
 }
