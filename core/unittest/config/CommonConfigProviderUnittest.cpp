@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-#include "json/json.h"
+#include <json/json.h>
 
 #include "AppConfig.h"
 #include "common/FileSystemUtil.h"
@@ -21,6 +21,9 @@
 #include "config/ConfigDiff.h"
 #include "config/InstanceConfigManager.h"
 #include "config/common_provider/CommonConfigProvider.h"
+#ifdef __ENTERPRISE__
+#include "config/provider/EnterpriseConfigProvider.h"
+#endif
 #include "config/watcher/InstanceConfigWatcher.h"
 #include "config/watcher/PipelineConfigWatcher.h"
 #include "file_server/FileServer.h"
@@ -28,9 +31,6 @@
 #include "monitor/Monitor.h"
 #include "pipeline/PipelineManager.h"
 #include "unittest/Unittest.h"
-#ifdef __ENTERPRISE__
-#include "config/provider/EnterpriseConfigProvider.h"
-#endif
 
 DECLARE_FLAG_BOOL(logtail_mode);
 
@@ -470,14 +470,22 @@ void CommonConfigProviderUnittest::TestGetConfigUpdateAndConfigWatcher() {
         APSARA_TEST_TRUE(!instanceConfigDiff.IsEmpty());
         APSARA_TEST_EQUAL(1U, instanceConfigDiff.mAdded.size());
         APSARA_TEST_EQUAL(instanceConfigDiff.mAdded[0].mConfigName, "instanceconfig1");
+#ifdef __ENTERPRISE__
+        APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames().size(), 1);
+#else
         APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames().size(), 2);
+#endif
         APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames()[0], "instanceconfig1");
         // 再次处理 instanceconfig
         instanceConfigDiff = InstanceConfigWatcher::GetInstance()->CheckConfigDiff();
         InstanceConfigManager::GetInstance()->UpdateInstanceConfigs(instanceConfigDiff);
         APSARA_TEST_TRUE(instanceConfigDiff.IsEmpty());
         APSARA_TEST_TRUE(instanceConfigDiff.mAdded.empty());
+#ifdef __ENTERPRISE__
+        APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames().size(), 1);
+#else
         APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames().size(), 2);
+#endif
         APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames()[0], "instanceconfig1");
 
         provider.Stop();
@@ -681,7 +689,12 @@ void CommonConfigProviderUnittest::TestGetConfigUpdateAndConfigWatcher() {
         // 处理instanceConfigDiff
         InstanceConfigDiff instanceConfigDiff = InstanceConfigWatcher::GetInstance()->CheckConfigDiff();
         InstanceConfigManager::GetInstance()->UpdateInstanceConfigs(instanceConfigDiff);
-        APSARA_TEST_TRUE(!InstanceConfigManager::GetInstance()->GetAllConfigNames().empty());
+#ifdef __ENTERPRISE__
+        APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames().size(), 0);
+#else
+        APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames().size(), 1);
+        APSARA_TEST_EQUAL(InstanceConfigManager::GetInstance()->GetAllConfigNames()[0], "loongcollector_config");
+#endif
         APSARA_TEST_EQUAL(1U, instanceConfigDiff.mRemoved.size());
         APSARA_TEST_EQUAL(instanceConfigDiff.mRemoved[0], "instanceconfig1");
 
