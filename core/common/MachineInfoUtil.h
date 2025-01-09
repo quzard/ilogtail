@@ -82,6 +82,11 @@ public:
 
     bool UpdateInstanceIdentity(const ECSMeta& meta);
     void DumpInstanceIdentity();
+    bool SetInstanceIdentityReady() {
+        mInstanceIdentity.getWriteBuffer() = mInstanceIdentity.getReadBuffer();
+        mInstanceIdentity.getWriteBuffer().isReady = true;
+        mInstanceIdentity.swap();
+    };
 
 private:
     // 从文件获取ecs元数据

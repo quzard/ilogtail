@@ -113,6 +113,8 @@ void Application::Init() {
         if (FetchECSMeta(ecsMeta)) {
             HostIdentifier::Instance()->UpdateInstanceIdentity(ecsMeta);
         }
+        // 不管ecs meta是否获取成功，都设置instanceIdentity为ready
+        HostIdentifier::Instance()->SetInstanceIdentityReady();
     }
 #endif
 
