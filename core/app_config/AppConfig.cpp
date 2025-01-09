@@ -375,6 +375,13 @@ std::string GetAgentDataDir() {
         dir = STRING_FLAG(loongcollector_data_dir) + PATH_SEPARATOR;
     }
 #endif
+    if (!CheckExistance(dir)) {
+        if (Mkdirs(dir)) {
+            LOG_INFO(sLogger, ("create data dir success", dir));
+        } else {
+            LOG_ERROR(sLogger, ("create data dir failed", dir));
+        }
+    }
     return dir;
 }
 

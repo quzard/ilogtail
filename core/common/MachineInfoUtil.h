@@ -16,11 +16,12 @@
 
 #pragma once
 
-#include <cstdint>
-
-#include <shared_mutex>
 #include <string>
 #include <unordered_set>
+
+#include "json/value.h"
+
+#include "AppConfig.h"
 
 namespace logtail {
 
@@ -30,6 +31,22 @@ struct ECSMeta {
     std::string userID;
     std::string regionID;
 };
+enum Type {
+    CUSTOM,
+    ECS,
+    ECS_ASSIST,
+    LOCAL,
+};
+struct Hostid {
+    std::string id;
+    Type type;
+};
+struct InstanceIdentity {
+    bool isReady = false;
+    ECSMeta ecsMeta;
+    Hostid hostid;
+};
+
 std::string GetOsDetail();
 std::string GetUsername();
 std::string GetHostName();
@@ -49,53 +66,32 @@ bool IsDigitsDotsHostname(const char* hostname);
 // NOTE: logger must be initialized before calling this.
 std::string GetAnyAvailableIP();
 
+bool FetchECSMeta(ECSMeta& metaObj);
+
 class HostIdentifier {
 public:
-    enum Type {
-        CUSTOM,
-        ECS,
-        ECS_ASSIST,
-        LOCAL,
-    };
-    struct Hostid {
-        std::string id;
-        Type type;
-    };
     HostIdentifier();
     static HostIdentifier* Instance() {
         static HostIdentifier sInstance;
         return &sInstance;
     }
-    // 注意: 不要在类初始化时调用并缓存结果，因为此时ECS元数据可能尚未就绪
-    // 建议在实际使用时再调用此方法
-    HostIdentifier::Hostid GetHostId() {
-        std::shared_lock<std::shared_mutex> lock(mMutex); // 获取读锁
-        return mHostid;
-    }
 
     // 注意: 不要在类初始化时调用并缓存结果，因为此时ECS元数据可能尚未就绪
     // 建议在实际使用时再调用此方法
-    ECSMeta GetECSMeta() {
-        std::shared_lock<std::shared_mutex> lock(mMutex); // 获取读锁
-        return mMetadata;
-    }
+    InstanceIdentity GetInstanceIdentity() { return mInstanceIdentity.getReadBuffer(); }
 
-    bool UpdateECSMetaAndHostid(const ECSMeta& meta);
-    void DumpECSMeta();
+    bool UpdateInstanceIdentity(const ECSMeta& meta);
+    void DumpInstanceIdentity();
 
 private:
-    bool FetchECSMeta(ECSMeta& metaObj);
-
-    void getECSMetaFromFile();
+    // 从文件获取ecs元数据
+    void getInstanceIdentityFromFile();
     // 从云助手获取序列号
     void getSerialNumberFromEcsAssist();
     // 从本地文件获取hostid
     void getLocalHostId();
 
     void updateHostId();
-    void setHostId(const Hostid& hostid);
-
-    std::shared_mutex mMutex;
 
 #if defined(_MSC_VER)
     std::string mEcsAssistMachineIdFile = "C:\\ProgramData\\aliyun\\assist\\hybrid\\machine-id";
@@ -105,11 +101,13 @@ private:
     bool mHasTriedToGetSerialNumber = false;
     std::string mSerialNumber;
 
+    DoubleBuffer<InstanceIdentity> mInstanceIdentity;
     Hostid mHostid;
 
     ECSMeta mMetadata;
-    std::string mMetadataStr;
-
+    Json::Value mInstanceIdentityJson;
+    std::string mInstanceIdentityFile;
+    bool mHasGeneratedLocalHostId = false;
     std::string mLocalHostId;
 #ifdef __ENTERPRISE__
     friend class EnterpriseConfigProvider;
