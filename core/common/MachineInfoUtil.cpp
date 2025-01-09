@@ -502,6 +502,32 @@ size_t FetchECSMetaCallback(char* buffer, size_t size, size_t nmemb, std::string
     return sizes;
 }
 
+bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
+    Json::Value doc;
+    std::string errMsg;
+    if (!ParseJsonTable(meta, doc, errMsg)) {
+        LOG_WARNING(sLogger, ("parse ecs meta fail, errMsg", errMsg)("meta", meta));
+        return false;
+    }
+
+    if (doc.isMember("instance-id") && doc["instance-id"].isString()) {
+        metaObj.instanceID = doc["instance-id"].asString();
+    }
+
+    if (doc.isMember("owner-account-id") && doc["owner-account-id"].isString()) {
+        metaObj.userID = doc["owner-account-id"].asString();
+    }
+
+    if (doc.isMember("region-id") && doc["region-id"].isString()) {
+        metaObj.regionID = doc["region-id"].asString();
+    }
+    if (!metaObj.instanceID.empty() && !metaObj.userID.empty() && !metaObj.regionID.empty()) {
+        metaObj.isValid = true;
+        return true;
+    }
+    return false;
+}
+
 HostIdentifier::HostIdentifier() {
 #ifdef __ENTERPRISE__
     mInstanceIdentityFile = GetAgentDataDir() + PATH_SEPARATOR + "instance_identity";
@@ -610,32 +636,6 @@ void HostIdentifier::updateHostId() {
                  ("change hostId, id from", mHostid.id)("to", newId.id)("type from", mHostid.type)("to", newId.type));
         mHostid = newId;
     }
-}
-
-bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
-    Json::Value doc;
-    std::string errMsg;
-    if (!ParseJsonTable(meta, doc, errMsg)) {
-        LOG_WARNING(sLogger, ("parse ecs meta fail, errMsg", errMsg)("meta", meta));
-        return false;
-    }
-
-    if (doc.isMember("instance-id") && doc["instance-id"].isString()) {
-        metaObj.instanceID = doc["instance-id"].asString();
-    }
-
-    if (doc.isMember("owner-account-id") && doc["owner-account-id"].isString()) {
-        metaObj.userID = doc["owner-account-id"].asString();
-    }
-
-    if (doc.isMember("region-id") && doc["region-id"].isString()) {
-        metaObj.regionID = doc["region-id"].asString();
-    }
-    if (!metaObj.instanceID.empty() && !metaObj.userID.empty() && !metaObj.regionID.empty()) {
-        metaObj.isValid = true;
-        return true;
-    }
-    return false;
 }
 
 bool FetchECSMeta(ECSMeta& metaObj) {
