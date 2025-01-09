@@ -617,6 +617,7 @@ bool InstanceIdentity::UpdateInstanceIdentity(const ECSMeta& meta) {
         mInstanceIdentityJson[sOwnerAccountIdKey] = meta.GetUserID().to_string();
         mInstanceIdentityJson[sRegionIdKey] = meta.GetRegionID().to_string();
         DumpInstanceIdentity();
+        mIsReady = true;
         return true;
     }
     return false;
