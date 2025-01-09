@@ -585,8 +585,8 @@ void HostIdentifier::getInstanceIdentityFromFile() {
 }
 
 bool HostIdentifier::UpdateInstanceIdentity(const ECSMeta& meta) {
-    // 如果 instanceID 发生变化，则更新ecs元数据
-    if (mInstanceIdentity.getReadBuffer().GetEcsInstanceID() != meta.GetInstanceID()) {
+    // 如果 meta合法 且 instanceID 发生变化，则更新ecs元数据
+    if (meta.IsValid() && mInstanceIdentity.getReadBuffer().GetEcsInstanceID() != meta.GetInstanceID()) {
         LOG_INFO(sLogger,
                  ("ecs instanceID changed, old instanceID",
                   mInstanceIdentity.getReadBuffer().GetEcsInstanceID())("new instanceID", meta.GetInstanceID()));
