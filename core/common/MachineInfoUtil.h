@@ -78,7 +78,7 @@ public:
 
     // 注意: 不要在类初始化时调用并缓存结果，因为此时ECS元数据可能尚未就绪
     // 建议在实际使用时再调用此方法
-    InstanceIdentity GetInstanceIdentity() { return mInstanceIdentity.getReadBuffer(); }
+    const InstanceIdentity* GetInstanceIdentity() { return &mInstanceIdentity.getReadBuffer(); }
 
     bool UpdateInstanceIdentity(const ECSMeta& meta);
     void DumpInstanceIdentity();
