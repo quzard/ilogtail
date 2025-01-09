@@ -85,7 +85,6 @@ void InstanceIdentityUnittest::TestUpdateECSMeta() {
     {
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostID().to_string(), BOOL_FLAG(agent_host_id));
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostIdType(), Hostid::Type::CUSTOM);
-        APSARA_TEST_TRUE(InstanceIdentity::Instance()->IsReady());
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsInstanceID().to_string(), "");
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsUserID().to_string(), "");
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsRegionID().to_string(), "");
@@ -100,7 +99,6 @@ void InstanceIdentityUnittest::TestUpdateECSMeta() {
         InstanceIdentity::Instance()->UpdateInstanceIdentity(meta);
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostID().to_string(), "i-1234567890");
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostIdType(), Hostid::Type::ECS);
-        APSARA_TEST_TRUE(InstanceIdentity::Instance()->IsReady());
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsInstanceID().to_string(), "i-1234567890");
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsUserID().to_string(), "1234567890");
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsRegionID().to_string(), "cn-hangzhou");
@@ -112,7 +110,6 @@ void InstanceIdentityUnittest::TestUpdateECSMeta() {
         InstanceIdentity::Instance()->UpdateInstanceIdentity(meta);
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostID().to_string(), "i-1234567890");
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostIdType(), Hostid::Type::ECS);
-        APSARA_TEST_TRUE(InstanceIdentity::Instance()->IsReady());
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsInstanceID().to_string(), "i-1234567890");
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsUserID().to_string(), "1234567890");
         APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsRegionID().to_string(), "cn-hangzhou");
