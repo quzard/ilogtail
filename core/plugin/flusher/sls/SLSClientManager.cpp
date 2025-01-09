@@ -14,8 +14,6 @@
 
 #include "plugin/flusher/sls/SLSClientManager.h"
 
-#include "MachineInfoUtil.h"
-
 #ifdef __linux__
 #include <sys/utsname.h>
 #endif
@@ -23,6 +21,7 @@
 #include "app_config/AppConfig.h"
 #include "common/Flags.h"
 #include "common/HashUtil.h"
+#include "common/MachineInfoUtil.h"
 #include "common/StringTools.h"
 #include "common/http/Constant.h"
 #include "common/http/Curl.h"
