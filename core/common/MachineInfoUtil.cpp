@@ -590,6 +590,7 @@ bool HostIdentifier::UpdateInstanceIdentity(const ECSMeta& meta) {
         LOG_INFO(sLogger,
                  ("ecs instanceID changed, old instanceID",
                   mInstanceIdentity.getReadBuffer().GetEcsInstanceID())("new instanceID", meta.GetInstanceID()));
+        mInstanceIdentity.getWriteBuffer() = mInstanceIdentity.getWriteBuffer();
         updateHostId(meta);
         mInstanceIdentity.getWriteBuffer().SetReady(true);
         mInstanceIdentity.getWriteBuffer().SetECSMeta(meta);
