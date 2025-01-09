@@ -107,7 +107,7 @@ void Application::Init() {
 
     AppConfig::GetInstance()->LoadAppConfig(GetAgentConfigFile());
 #ifdef __ENTERPRISE__
-    if (!InstanceIdentity::Instance()->GetEntity()->IsReady()) {
+    if (!InstanceIdentity::Instance()->IsReady()) {
         // not ready, fetch ecs meta
         ECSMeta ecsMeta;
         if (FetchECSMeta(ecsMeta)) {
