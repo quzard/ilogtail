@@ -49,6 +49,11 @@
 
 DEFINE_FLAG_STRING(agent_host_id, "", "");
 
+const std::string sInstanceIdKey = "instance-id";
+const std::string sOwnerAccountIdKey = "owner-account-id";
+const std::string sRegionIdKey = "region-id";
+const std::string sRandomHostIdKey = "random-hostid";
+
 #if defined(_MSC_VER)
 typedef LONG NTSTATUS, *PNTSTATUS;
 #define STATUS_SUCCESS (0x00000000)
@@ -510,16 +515,16 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
         return false;
     }
 
-    if (doc.isMember("instance-id") && doc["instance-id"].isString()) {
-        metaObj.instanceID = doc["instance-id"].asString();
+    if (doc.isMember(sInstanceIdKey) && doc[sInstanceIdKey].isString()) {
+        metaObj.instanceID = doc[sInstanceIdKey].asString();
     }
 
-    if (doc.isMember("owner-account-id") && doc["owner-account-id"].isString()) {
-        metaObj.userID = doc["owner-account-id"].asString();
+    if (doc.isMember(sOwnerAccountIdKey) && doc[sOwnerAccountIdKey].isString()) {
+        metaObj.userID = doc[sOwnerAccountIdKey].asString();
     }
 
-    if (doc.isMember("region-id") && doc["region-id"].isString()) {
-        metaObj.regionID = doc["region-id"].asString();
+    if (doc.isMember(sRegionIdKey) && doc[sRegionIdKey].isString()) {
+        metaObj.regionID = doc[sRegionIdKey].asString();
     }
     if (!metaObj.instanceID.empty() && !metaObj.userID.empty() && !metaObj.regionID.empty()) {
         metaObj.isValid = true;
@@ -536,7 +541,7 @@ HostIdentifier::HostIdentifier() {
     mInstanceIdentity.getWriteBuffer().hostid = mHostid;
     mInstanceIdentity.swap();
     if (mHasGeneratedLocalHostId) {
-        mInstanceIdentityJson["random-hostid"] = mLocalHostId;
+        mInstanceIdentityJson[sRandomHostIdKey] = mLocalHostId;
         DumpInstanceIdentity();
     }
 #else
@@ -567,8 +572,9 @@ void HostIdentifier::getInstanceIdentityFromFile() {
             mInstanceIdentity.getWriteBuffer().ecsMeta = mMetadata;
         } else {
             // 不存在ecs meta信息， 则尝试读取下 random-hostid
-            if (mInstanceIdentityJson.isMember("random-hostid") && mInstanceIdentityJson["random-hostid"].isString()) {
-                mLocalHostId = mInstanceIdentityJson["random-hostid"].asString();
+            if (mInstanceIdentityJson.isMember(sRandomHostIdKey)
+                && mInstanceIdentityJson[sRandomHostIdKey].isString()) {
+                mLocalHostId = mInstanceIdentityJson[sRandomHostIdKey].asString();
             } else {
                 LOG_ERROR(sLogger,
                           ("instanceIdentity is ready, but no random-hostid and ecs meta found, file",
@@ -595,9 +601,9 @@ bool HostIdentifier::UpdateInstanceIdentity(const ECSMeta& meta) {
         mInstanceIdentity.swap();
         // 存在ecs meta信息， 只要dump ecs meta信息即可，无需dump random-hostid
         mInstanceIdentityJson.clear();
-        mInstanceIdentityJson["instance-id"] = meta.instanceID;
-        mInstanceIdentityJson["owner-account-id"] = meta.userID;
-        mInstanceIdentityJson["region-id"] = meta.regionID;
+        mInstanceIdentityJson[sInstanceIdKey] = meta.instanceID;
+        mInstanceIdentityJson[sOwnerAccountIdKey] = meta.userID;
+        mInstanceIdentityJson[sRegionIdKey] = meta.regionID;
         DumpInstanceIdentity();
         return true;
     }
