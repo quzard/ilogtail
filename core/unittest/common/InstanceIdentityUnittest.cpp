@@ -37,8 +37,11 @@ void InstanceIdentityUnittest::TestECSMeta() {
         meta.SetRegionID("cn-hangzhou");
         APSARA_TEST_TRUE(meta.IsValid());
         APSARA_TEST_EQUAL(meta.GetInstanceID().to_string(), "i-1234567890");
+        APSARA_TEST_EQUAL(meta.instanceIDLen, 12);
         APSARA_TEST_EQUAL(meta.GetUserID().to_string(), "1234567890");
+        APSARA_TEST_EQUAL(meta.userIDLen, 10);
         APSARA_TEST_EQUAL(meta.GetRegionID().to_string(), "cn-hangzhou");
+        APSARA_TEST_EQUAL(meta.regionIDLen, 11);
     }
     {
         ECSMeta meta;

@@ -526,10 +526,7 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
     if (doc.isMember(sRegionIdKey) && doc[sRegionIdKey].isString()) {
         metaObj.SetRegionID(doc[sRegionIdKey].asString());
     }
-    if (!metaObj.GetInstanceID().empty() && !metaObj.GetUserID().empty() && !metaObj.GetRegionID().empty()) {
-        return true;
-    }
-    return false;
+    return metaObj.IsValid();
 }
 
 HostIdentifier::HostIdentifier() {
@@ -591,8 +588,8 @@ bool HostIdentifier::UpdateInstanceIdentity(const ECSMeta& meta) {
     // 如果 instanceID 发生变化，则更新ecs元数据
     if (mMetadata.GetInstanceID() != meta.GetInstanceID()) {
         LOG_INFO(sLogger,
-                 ("ecs instanceID changed, old instanceID",
-                  mMetadata.GetInstanceID().to_string())("new instanceID", meta.GetInstanceID().to_string()));
+                 ("ecs instanceID changed, old instanceID", mMetadata.GetInstanceID())("new instanceID",
+                                                                                       meta.GetInstanceID()));
         mMetadata = meta;
         updateHostId();
         mInstanceIdentity.getWriteBuffer().SetReady(true);
@@ -623,7 +620,7 @@ void HostIdentifier::DumpInstanceIdentity() {
 
 void HostIdentifier::updateHostId() {
     Hostid newId;
-    if (mMetadata.IsValid() && !mMetadata.GetInstanceID().empty()) {
+    if (mMetadata.IsValid()) {
         newId = {mMetadata.GetInstanceID().to_string(), Type::ECS};
     } else {
         getSerialNumberFromEcsAssist();
