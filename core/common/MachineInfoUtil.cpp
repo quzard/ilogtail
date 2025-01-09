@@ -542,15 +542,15 @@ void InstanceIdentity::DumpInstanceIdentity() {
         mInstanceIdentityJson[sInstanceIdKey] = mEntity.getReadBuffer().GetEcsInstanceID().to_string();
         mInstanceIdentityJson[sOwnerAccountIdKey] = mEntity.getReadBuffer().GetEcsUserID().to_string();
         mInstanceIdentityJson[sRegionIdKey] = mEntity.getReadBuffer().GetEcsRegionID().to_string();
-        DumpInstanceIdentity();
+        dumpInstanceIdentityToFile();
     } else if (mEntity.getReadBuffer().GetHostIdType() == Hostid::Type::LOCAL && mHasGeneratedLocalHostId) {
         mInstanceIdentityJson.clear();
         mInstanceIdentityJson[sRandomHostIdKey] = mLocalHostId;
-        DumpInstanceIdentity();
+        dumpInstanceIdentityToFile();
     } else if (mEntity.getReadBuffer().GetHostIdType() == Hostid::Type::ECS_ASSIST && !mSerialNumber.empty()) {
         mInstanceIdentityJson.clear();
         mInstanceIdentityJson[sECSAssistMachineIdKey] = mSerialNumber;
-        DumpInstanceIdentity();
+        dumpInstanceIdentityToFile();
     }
 }
 
@@ -564,6 +564,7 @@ void InstanceIdentity::InitFromNetwork() {
 bool InstanceIdentity::InitFromFile() {
     mInstanceIdentityFile = GetAgentDataDir() + PATH_SEPARATOR + "instance_identity";
     bool initSuccess = false;
+    ECSMeta meta;
     if (CheckExistance(mInstanceIdentityFile)) {
         std::string instanceIdentityStr;
         if (ReadFileContent(mInstanceIdentityFile, instanceIdentityStr)) {
@@ -575,9 +576,7 @@ bool InstanceIdentity::InitFromFile() {
                              errMsg)("instanceIdentity", instanceIdentityStr)("file", mInstanceIdentityFile));
             } else {
                 mInstanceIdentityJson = std::move(doc);
-                ECSMeta meta;
                 if (ParseECSMeta(instanceIdentityStr, meta)) {
-                    mEntity.getWriteBuffer().SetECSMeta(meta);
                     // 存在 ecs meta信息，则认为instanceIdentity是ready的
                     initSuccess = true;
                 } else if (mInstanceIdentityJson.isMember(sRandomHostIdKey)
@@ -603,7 +602,10 @@ bool InstanceIdentity::InitFromFile() {
         }
     }
     // 计算hostid
-    updateHostId(mEntity.getWriteBuffer().GetECSMeta());
+    if (meta.IsValid()) {
+        mEntity.getWriteBuffer().SetECSMeta(meta);
+    }
+    updateHostId(meta);
     mEntity.swap();
     return initSuccess;
 }
@@ -614,8 +616,8 @@ bool InstanceIdentity::UpdateInstanceIdentity(const ECSMeta& meta) {
         LOG_INFO(sLogger,
                  ("ecs mInstanceID changed, old mInstanceID",
                   mEntity.getReadBuffer().GetEcsInstanceID())("new mInstanceID", meta.GetInstanceID()));
-        updateHostId(meta);
         mEntity.getWriteBuffer().SetECSMeta(meta);
+        updateHostId(meta);
         mEntity.swap();
         return true;
     }
