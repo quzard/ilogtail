@@ -164,7 +164,7 @@ public:
     bool UpdateInstanceIdentity(const ECSMeta& meta);
     void DumpInstanceIdentity();
     void SetReady();
-    [[nodiscard]] bool IsReady() const { return mIsReady; }
+    [[nodiscard]] bool NeedFetchECSMeta() const { return mNeedFetchECSMeta; }
 
     void InitFromFile();
 
@@ -177,13 +177,14 @@ private:
     void getLocalHostId();
 
     void updateHostId(const ECSMeta& meta);
+    void dumpInstanceIdentityToFile();
 
 #if defined(_MSC_VER)
     std::string mEcsAssistMachineIdFile = "C:\\ProgramData\\aliyun\\assist\\hybrid\\machine-id";
 #else
     std::string mEcsAssistMachineIdFile = "/usr/local/share/aliyun-assist/hybrid/machine-id";
 #endif
-    bool mIsReady = false;
+    bool mNeedFetchECSMeta = false;
 
     bool mHasTriedToGetSerialNumber = false;
     std::string mSerialNumber;

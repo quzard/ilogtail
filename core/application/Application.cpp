@@ -108,13 +108,11 @@ void Application::Init() {
     AppConfig::GetInstance()->LoadAppConfig(GetAgentConfigFile());
 #ifdef __ENTERPRISE__
     InstanceIdentity::Instance()->InitFromFile();
-    if (!InstanceIdentity::Instance()->IsReady()) {
+    if (InstanceIdentity::Instance()->NeedFetchECSMeta()) {
         InstanceIdentity::Instance()->InitFromNetwork();
+        InstanceIdentity::Instance()->DumpInstanceIdentity();
     }
 #endif
-    if (!InstanceIdentity::Instance()->IsReady()) {
-        InstanceIdentity::Instance()->SetReady();
-    }
     // Initialize basic information: IP, hostname, etc.
     LoongCollectorMonitor::GetInstance();
 #ifdef __ENTERPRISE__
