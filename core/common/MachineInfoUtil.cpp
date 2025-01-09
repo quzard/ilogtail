@@ -516,18 +516,17 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
     }
 
     if (doc.isMember(sInstanceIdKey) && doc[sInstanceIdKey].isString()) {
-        metaObj.instanceID = doc[sInstanceIdKey].asString();
+        metaObj.SetInstanceID(doc[sInstanceIdKey].asString());
     }
 
     if (doc.isMember(sOwnerAccountIdKey) && doc[sOwnerAccountIdKey].isString()) {
-        metaObj.userID = doc[sOwnerAccountIdKey].asString();
+        metaObj.SetUserID(doc[sOwnerAccountIdKey].asString());
     }
 
     if (doc.isMember(sRegionIdKey) && doc[sRegionIdKey].isString()) {
-        metaObj.regionID = doc[sRegionIdKey].asString();
+        metaObj.SetRegionID(doc[sRegionIdKey].asString());
     }
-    if (!metaObj.instanceID.empty() && !metaObj.userID.empty() && !metaObj.regionID.empty()) {
-        metaObj.isValid = true;
+    if (!metaObj.GetInstanceID().empty() && !metaObj.GetUserID().empty() && !metaObj.GetRegionID().empty()) {
         return true;
     }
     return false;
@@ -538,15 +537,15 @@ HostIdentifier::HostIdentifier() {
     mInstanceIdentityFile = GetAgentDataDir() + PATH_SEPARATOR + "instance_identity";
     getInstanceIdentityFromFile();
     updateHostId();
-    mInstanceIdentity.getWriteBuffer().hostid = mHostid;
+    mInstanceIdentity.getWriteBuffer().SetHostID(mHostid);
     mInstanceIdentity.swap();
     if (mHasGeneratedLocalHostId) {
         mInstanceIdentityJson[sRandomHostIdKey] = mLocalHostId;
         DumpInstanceIdentity();
     }
 #else
-    mInstanceIdentity.getWriteBuffer().hostid = {STRING_FLAG(agent_host_id), Type::CUSTOM};
-    mInstanceIdentity.getWriteBuffer().isReady = true;
+    mInstanceIdentity.getWriteBuffer().SetHostID({STRING_FLAG(agent_host_id), Type::CUSTOM});
+    mInstanceIdentity.getWriteBuffer().SetReady(true);
     mInstanceIdentity.swap();
 #endif
 }
@@ -567,9 +566,9 @@ void HostIdentifier::getInstanceIdentityFromFile() {
         }
         mInstanceIdentityJson = std::move(doc);
         // 文件存在且不为非法json，则认为instanceIdentity是ready的
-        mInstanceIdentity.getWriteBuffer().isReady = true;
+        mInstanceIdentity.getWriteBuffer().SetReady(true);
         if (ParseECSMeta(instanceIdentityStr, mMetadata)) {
-            mInstanceIdentity.getWriteBuffer().ecsMeta = mMetadata;
+            mInstanceIdentity.getWriteBuffer().SetECSMeta(mMetadata);
         } else {
             // 不存在ecs meta信息， 则尝试读取下 random-hostid
             if (mInstanceIdentityJson.isMember(sRandomHostIdKey)
@@ -590,20 +589,21 @@ void HostIdentifier::getInstanceIdentityFromFile() {
 
 bool HostIdentifier::UpdateInstanceIdentity(const ECSMeta& meta) {
     // 如果 instanceID 发生变化，则更新ecs元数据
-    if (mMetadata.instanceID != meta.instanceID) {
+    if (mMetadata.GetInstanceID() != meta.GetInstanceID()) {
         LOG_INFO(sLogger,
-                 ("ecs instanceID changed, old instanceID", mMetadata.instanceID)("new instanceID", meta.instanceID));
+                 ("ecs instanceID changed, old instanceID",
+                  mMetadata.GetInstanceID().to_string())("new instanceID", meta.GetInstanceID().to_string()));
         mMetadata = meta;
         updateHostId();
-        mInstanceIdentity.getWriteBuffer().isReady = true;
-        mInstanceIdentity.getWriteBuffer().ecsMeta = mMetadata;
-        mInstanceIdentity.getWriteBuffer().hostid = mHostid;
+        mInstanceIdentity.getWriteBuffer().SetReady(true);
+        mInstanceIdentity.getWriteBuffer().SetECSMeta(mMetadata);
+        mInstanceIdentity.getWriteBuffer().SetHostID(mHostid);
         mInstanceIdentity.swap();
         // 存在ecs meta信息， 只要dump ecs meta信息即可，无需dump random-hostid
         mInstanceIdentityJson.clear();
-        mInstanceIdentityJson[sInstanceIdKey] = meta.instanceID;
-        mInstanceIdentityJson[sOwnerAccountIdKey] = meta.userID;
-        mInstanceIdentityJson[sRegionIdKey] = meta.regionID;
+        mInstanceIdentityJson[sInstanceIdKey] = meta.GetInstanceID().to_string();
+        mInstanceIdentityJson[sOwnerAccountIdKey] = meta.GetUserID().to_string();
+        mInstanceIdentityJson[sRegionIdKey] = meta.GetRegionID().to_string();
         DumpInstanceIdentity();
         return true;
     }
@@ -623,8 +623,8 @@ void HostIdentifier::DumpInstanceIdentity() {
 
 void HostIdentifier::updateHostId() {
     Hostid newId;
-    if (mMetadata.isValid && !mMetadata.instanceID.empty()) {
-        newId = {mMetadata.instanceID, Type::ECS};
+    if (mMetadata.IsValid() && !mMetadata.GetInstanceID().empty()) {
+        newId = {mMetadata.GetInstanceID().to_string(), Type::ECS};
     } else {
         getSerialNumberFromEcsAssist();
         if (!mSerialNumber.empty()) {
@@ -645,7 +645,6 @@ void HostIdentifier::updateHostId() {
 }
 
 bool FetchECSMeta(ECSMeta& metaObj) {
-    metaObj.isValid = false;
     CURL* curl = nullptr;
     for (size_t retryTimes = 1; retryTimes <= 5; retryTimes++) {
         curl = curl_easy_init();
@@ -711,7 +710,7 @@ bool FetchECSMeta(ECSMeta& metaObj) {
             return false;
         }
         curl_easy_cleanup(curl);
-        return metaObj.isValid;
+        return metaObj.IsValid();
     }
     LOG_WARNING(
         sLogger,

@@ -109,7 +109,7 @@ string SLSClientManager::GetRunningEnvironment() {
         // containers in K8S will possess the above env
         if (AppConfig::GetInstance()->IsPurageContainerMode()) {
             env = "K8S-Daemonset";
-        } else if (HostIdentifier::Instance()->GetInstanceIdentity().ecsMeta.isValid) {
+        } else if (HostIdentifier::Instance()->GetInstanceIdentity()->IsECSValid()) {
             // containers in ACK can be connected to the above address, see
             // https://help.aliyun.com/document_detail/108460.html#section-akf-lwh-1gb.
             // Note: we can not distinguish ACK from K8S built on ECS
@@ -119,7 +119,7 @@ string SLSClientManager::GetRunningEnvironment() {
         }
     } else if (AppConfig::GetInstance()->IsPurageContainerMode() || getenv("ALIYUN_LOGTAIL_CONFIG")) {
         env = "Docker";
-    } else if (HostIdentifier::Instance()->GetInstanceIdentity().ecsMeta.isValid) {
+    } else if (HostIdentifier::Instance()->GetInstanceIdentity()->IsECSValid()) {
         env = "ECS";
     } else {
         env = "Others";

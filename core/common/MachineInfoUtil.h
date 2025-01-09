@@ -16,20 +16,50 @@
 
 #pragma once
 
+#include <array>
 #include <string>
 #include <unordered_set>
 
 #include "json/value.h"
 
 #include "AppConfig.h"
+#include "models/StringView.h"
 
 namespace logtail {
 
 struct ECSMeta {
-    bool isValid = false;
-    std::string instanceID;
-    std::string userID;
-    std::string regionID;
+    ECSMeta() = default;
+
+    void SetInstanceID(const std::string& id) { SetID(id, instanceID, instanceIDLen); }
+
+    void SetUserID(const std::string& id) { SetID(id, userID, userIDLen); }
+
+    void SetRegionID(const std::string& id) { SetID(id, regionID, regionIDLen); }
+
+    [[nodiscard]] StringView GetInstanceID() const { return StringView(instanceID.data(), instanceIDLen); }
+    [[nodiscard]] StringView GetUserID() const { return StringView(userID.data(), userIDLen); }
+    [[nodiscard]] StringView GetRegionID() const { return StringView(regionID.data(), regionIDLen); }
+
+    [[nodiscard]] bool IsValid() const { return instanceIDLen > 0 && userIDLen > 0 && regionIDLen > 0; }
+
+private:
+    static const size_t ID_MAX_LENGTH = 128;
+
+    std::array<char, ID_MAX_LENGTH> instanceID{};
+    size_t instanceIDLen = 0UL;
+
+    std::array<char, ID_MAX_LENGTH> userID{};
+    size_t userIDLen = 0UL;
+
+    std::array<char, ID_MAX_LENGTH> regionID{};
+    size_t regionIDLen = 0UL;
+
+    template <size_t N>
+    void SetID(const std::string& id, std::array<char, N>& target, size_t& targetLen) {
+        targetLen = std::min(id.size(), N - 1);
+        std::copy_n(id.begin(), targetLen, target.begin());
+        target[targetLen] = '\0';
+    }
 };
 enum Type {
     CUSTOM,
@@ -41,7 +71,21 @@ struct Hostid {
     std::string id;
     Type type;
 };
-struct InstanceIdentity {
+class InstanceIdentity {
+public:
+    bool IsReady() const { return isReady; }
+    bool IsECSValid() const { return ecsMeta.IsValid(); }
+    StringView GetEcsInstanceID() const { return ecsMeta.GetInstanceID(); }
+    StringView GetEcsUserID() const { return ecsMeta.GetUserID(); }
+    StringView GetEcsRegionID() const { return ecsMeta.GetRegionID(); }
+    StringView GetHostID() const { return hostid.id; }
+    Type GetHostIdType() const { return hostid.type; }
+
+    void SetReady(bool ready) { isReady = ready; }
+    void SetECSMeta(const ECSMeta& meta) { ecsMeta = meta; }
+    void SetHostID(const Hostid& hostid) { this->hostid = hostid; }
+
+private:
     bool isReady = false;
     ECSMeta ecsMeta;
     Hostid hostid;
@@ -84,7 +128,7 @@ public:
     void DumpInstanceIdentity();
     void SetInstanceIdentityReady() {
         mInstanceIdentity.getWriteBuffer() = mInstanceIdentity.getReadBuffer();
-        mInstanceIdentity.getWriteBuffer().isReady = true;
+        mInstanceIdentity.getWriteBuffer().SetReady(true);
         mInstanceIdentity.swap();
     };
 
