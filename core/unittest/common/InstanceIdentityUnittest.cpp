@@ -13,15 +13,20 @@
 // limitations under the License.
 
 
+#include <array>
+
 #include "MachineInfoUtil.h"
 #include "unittest/Unittest.h"
 
 namespace logtail {
 
+static const size_t ID_MAX_LENGTH = ECSMeta::ID_MAX_LENGTH;
+
 class InstanceIdentityUnittest : public ::testing::Test {
 public:
     void TestECSMeta();
 };
+
 UNIT_TEST_CASE(InstanceIdentityUnittest, TestECSMeta);
 
 void InstanceIdentityUnittest::TestECSMeta() {
@@ -42,6 +47,34 @@ void InstanceIdentityUnittest::TestECSMeta() {
         meta.SetRegionID("cn-hangzhou");
         APSARA_TEST_FALSE(meta.IsValid());
     }
+    {
+        ECSMeta meta;
+        for (size_t i = 0; i < ID_MAX_LENGTH; ++i) {
+            APSARA_TEST_EQUAL(meta.instanceID[i], '\0');
+            APSARA_TEST_EQUAL(meta.userID[i], '\0');
+            APSARA_TEST_EQUAL(meta.regionID[i], '\0');
+        }
+    }
+    {
+        ECSMeta meta;
+        std::array<char, ID_MAX_LENGTH + 1> testString{};
+        for (size_t i = 0; i < testString.size(); ++i) {
+            testString[i] = 'a';
+        }
+        meta.SetInstanceID(testString.data());
+        meta.SetUserID(testString.data());
+        meta.SetRegionID(testString.data());
+        APSARA_TEST_TRUE(meta.IsValid());
+        APSARA_TEST_EQUAL(meta.GetInstanceID().to_string(), StringView(testString.data(), ID_MAX_LENGTH - 1));
+        APSARA_TEST_EQUAL(meta.GetUserID().to_string(), StringView(testString.data(), ID_MAX_LENGTH - 1));
+        APSARA_TEST_EQUAL(meta.GetRegionID().to_string(), StringView(testString.data(), ID_MAX_LENGTH - 1));
+
+        APSARA_TEST_EQUAL(meta.GetInstanceID().size(), ID_MAX_LENGTH - 1);
+        APSARA_TEST_EQUAL(meta.GetUserID().size(), ID_MAX_LENGTH - 1);
+        APSARA_TEST_EQUAL(meta.GetRegionID().size(), ID_MAX_LENGTH - 1);
+    }
 }
 
 } // namespace logtail
+
+UNIT_TEST_MAIN

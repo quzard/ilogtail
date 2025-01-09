@@ -60,6 +60,7 @@ private:
         std::copy_n(id.begin(), targetLen, target.begin());
         target[targetLen] = '\0';
     }
+    friend class InstanceIdentityUnittest;
 };
 enum Type {
     CUSTOM,
