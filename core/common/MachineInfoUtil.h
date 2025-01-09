@@ -112,7 +112,6 @@ private:
 };
 class InstanceIdentity {
 public:
-    bool IsReady() const { return mIsReady; }
     bool IsECSValid() const { return mECSMeta.IsValid(); }
     StringView GetEcsInstanceID() const { return mECSMeta.GetInstanceID(); }
     StringView GetEcsUserID() const { return mECSMeta.GetUserID(); }
@@ -121,12 +120,10 @@ public:
     Hostid::Type GetHostIdType() const { return mHostid.GetType(); }
     [[nodiscard]] const ECSMeta& GetECSMeta() const { return mECSMeta; }
 
-    void SetReady(bool ready) { mIsReady = ready; }
     void SetECSMeta(const ECSMeta& meta) { mECSMeta = meta; }
     void SetHostID(const Hostid& hostid) { mHostid = hostid; }
 
 private:
-    bool mIsReady = false;
     ECSMeta mECSMeta;
     Hostid mHostid;
 };
@@ -166,11 +163,7 @@ public:
 
     bool UpdateInstanceIdentity(const ECSMeta& meta);
     void DumpInstanceIdentity();
-    void SetInstanceIdentityReady() {
-        mInstanceIdentity.getWriteBuffer() = mInstanceIdentity.getReadBuffer();
-        mInstanceIdentity.getWriteBuffer().SetReady(true);
-        mInstanceIdentity.swap();
-    };
+    void SetInstanceIdentityReady() { mIsReady = true; };
 
 private:
     // 从文件获取ecs元数据
@@ -187,6 +180,8 @@ private:
 #else
     std::string mEcsAssistMachineIdFile = "/usr/local/share/aliyun-assist/hybrid/machine-id";
 #endif
+    bool mIsReady = false;
+
     bool mHasTriedToGetSerialNumber = false;
     std::string mSerialNumber;
 

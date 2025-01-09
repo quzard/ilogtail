@@ -533,55 +533,56 @@ HostIdentifier::HostIdentifier() {
 #ifdef __ENTERPRISE__
     mInstanceIdentityFile = GetAgentDataDir() + PATH_SEPARATOR + "instance_identity";
     getInstanceIdentityFromFile();
-    updateHostId(mInstanceIdentity.getWriteBuffer().GetECSMeta());
-    mInstanceIdentity.swap();
     if (mHasGeneratedLocalHostId) {
         mInstanceIdentityJson[sRandomHostIdKey] = mLocalHostId;
         DumpInstanceIdentity();
     }
 #else
     mInstanceIdentity.getWriteBuffer().SetHostID({STRING_FLAG(agent_host_id), Hostid::Type::CUSTOM});
-    mInstanceIdentity.getWriteBuffer().SetReady(true);
+    mIsReady = true;
     mInstanceIdentity.swap();
 #endif
 }
 
 void HostIdentifier::getInstanceIdentityFromFile() {
-    if (!CheckExistance(mInstanceIdentityFile)) {
-        return;
-    }
-    std::string instanceIdentityStr;
-    if (ReadFileContent(mInstanceIdentityFile, instanceIdentityStr)) {
-        Json::Value doc;
-        std::string errMsg;
-        if (!ParseJsonTable(instanceIdentityStr, doc, errMsg)) {
-            LOG_WARNING(sLogger,
-                        ("parse instanceIdentity from file fail",
-                         errMsg)("instanceIdentity", instanceIdentityStr)("file", mInstanceIdentityFile));
-            return;
-        }
-        mInstanceIdentityJson = std::move(doc);
-        // 文件存在且不为非法json，则认为instanceIdentity是ready的
-        mInstanceIdentity.getWriteBuffer().SetReady(true);
-        ECSMeta meta;
-        if (ParseECSMeta(instanceIdentityStr, meta)) {
-            mInstanceIdentity.getWriteBuffer().SetECSMeta(meta);
-        } else {
-            // 不存在ecs meta信息， 则尝试读取下 random-hostid
-            if (mInstanceIdentityJson.isMember(sRandomHostIdKey)
-                && mInstanceIdentityJson[sRandomHostIdKey].isString()) {
-                mLocalHostId = mInstanceIdentityJson[sRandomHostIdKey].asString();
+    if (CheckExistance(mInstanceIdentityFile)) {
+        std::string instanceIdentityStr;
+        if (ReadFileContent(mInstanceIdentityFile, instanceIdentityStr)) {
+            Json::Value doc;
+            std::string errMsg;
+            if (!ParseJsonTable(instanceIdentityStr, doc, errMsg)) {
+                LOG_WARNING(sLogger,
+                            ("parse instanceIdentity from file fail",
+                             errMsg)("instanceIdentity", instanceIdentityStr)("file", mInstanceIdentityFile));
+                return;
             } else {
-                LOG_ERROR(sLogger,
-                          ("instanceIdentity is ready, but no random-hostid and ecs meta found, file",
-                           mInstanceIdentityFile)("instanceIdentity", instanceIdentityStr));
+                mInstanceIdentityJson = std::move(doc);
+                // 文件存在且不为非法json，则认为instanceIdentity是ready的
+                ECSMeta meta;
+                if (ParseECSMeta(instanceIdentityStr, meta)) {
+                    mInstanceIdentity.getWriteBuffer().SetECSMeta(meta);
+                    mIsReady = true;
+                } else {
+                    // 不存在ecs meta信息， 则尝试读取下 random-hostid
+                    if (mInstanceIdentityJson.isMember(sRandomHostIdKey)
+                        && mInstanceIdentityJson[sRandomHostIdKey].isString()) {
+                        mLocalHostId = mInstanceIdentityJson[sRandomHostIdKey].asString();
+                        mIsReady = true;
+                    } else {
+                        LOG_ERROR(sLogger,
+                                  ("instanceIdentity is ready, but no random-hostid and ecs meta found, file",
+                                   mInstanceIdentityFile)("instanceIdentity", instanceIdentityStr));
+                    }
+                }
             }
+        } else {
+            LOG_ERROR(sLogger,
+                      ("read instanceIdentity from file fail, file", mInstanceIdentityFile)("instanceIdentity",
+                                                                                            instanceIdentityStr));
         }
-    } else {
-        LOG_ERROR(sLogger,
-                  ("read instanceIdentity from file fail, file", mInstanceIdentityFile)("instanceIdentity",
-                                                                                        instanceIdentityStr));
     }
+    updateHostId(mInstanceIdentity.getWriteBuffer().GetECSMeta());
+    mInstanceIdentity.swap();
 }
 
 bool HostIdentifier::UpdateInstanceIdentity(const ECSMeta& meta) {
@@ -590,9 +591,8 @@ bool HostIdentifier::UpdateInstanceIdentity(const ECSMeta& meta) {
         LOG_INFO(sLogger,
                  ("ecs instanceID changed, old instanceID",
                   mInstanceIdentity.getReadBuffer().GetEcsInstanceID())("new instanceID", meta.GetInstanceID()));
-        mInstanceIdentity.getWriteBuffer() = mInstanceIdentity.getWriteBuffer();
+        mInstanceIdentity.getWriteBuffer() = mInstanceIdentity.getReadBuffer();
         updateHostId(meta);
-        mInstanceIdentity.getWriteBuffer().SetReady(true);
         mInstanceIdentity.getWriteBuffer().SetECSMeta(meta);
         mInstanceIdentity.swap();
         // 存在ecs meta信息， 只要dump ecs meta信息即可，无需dump random-hostid
