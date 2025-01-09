@@ -75,7 +75,7 @@ struct Hostid {
         ECS_ASSIST,
         LOCAL,
     };
-    static std::string_view TypeToString(Type type) {
+    static std::string TypeToString(Type type) {
         switch (type) {
             case Type::CUSTOM:
                 return "CUSTOM";
