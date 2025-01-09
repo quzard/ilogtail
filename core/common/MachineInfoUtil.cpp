@@ -541,7 +541,7 @@ HostIdentifier::HostIdentifier() {
         DumpInstanceIdentity();
     }
 #else
-    mInstanceIdentity.getWriteBuffer().SetHostID({STRING_FLAG(agent_host_id), Type::CUSTOM});
+    mInstanceIdentity.getWriteBuffer().SetHostID({STRING_FLAG(agent_host_id), Hostid::Type::CUSTOM});
     mInstanceIdentity.getWriteBuffer().SetReady(true);
     mInstanceIdentity.swap();
 #endif
@@ -621,22 +621,24 @@ void HostIdentifier::DumpInstanceIdentity() {
 void HostIdentifier::updateHostId() {
     Hostid newId;
     if (mMetadata.IsValid()) {
-        newId = {mMetadata.GetInstanceID().to_string(), Type::ECS};
+        newId = {mMetadata.GetInstanceID().to_string(), Hostid::Type::ECS};
     } else {
         getSerialNumberFromEcsAssist();
         if (!mSerialNumber.empty()) {
-            newId = {mSerialNumber, Type::ECS_ASSIST};
+            newId = {mSerialNumber, Hostid::Type::ECS_ASSIST};
         } else if (!STRING_FLAG(agent_host_id).empty()) {
-            newId = {STRING_FLAG(agent_host_id), Type::CUSTOM};
+            newId = {STRING_FLAG(agent_host_id), Hostid::Type::CUSTOM};
         } else {
             getLocalHostId();
-            newId = {mLocalHostId, Type::LOCAL};
+            newId = {mLocalHostId, Hostid::Type::LOCAL};
         }
     }
     // 只在ID发生变化时更新并记录日志
-    if (mHostid.id != newId.id || mHostid.type != newId.type) {
-        LOG_INFO(sLogger,
-                 ("change hostId, id from", mHostid.id)("to", newId.id)("type from", mHostid.type)("to", newId.type));
+    if (mHostid.GetHostID() != newId.GetHostID() || mHostid.GetType() != newId.GetType()) {
+        LOG_INFO(
+            sLogger,
+            ("change hostId, id from", mHostid.GetHostID())("to", newId.GetHostID())(
+                "type from", Hostid::TypeToString(mHostid.GetType()))("to", Hostid::TypeToString(newId.GetType())));
         mHostid = newId;
     }
 }

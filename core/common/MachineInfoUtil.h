@@ -27,6 +27,18 @@
 
 namespace logtail {
 
+static const size_t ID_MAX_LENGTH = 128;
+template <size_t N>
+inline void SetID(const std::string& id, std::array<char, N>& target, size_t& targetLen) {
+    if (id.empty()) {
+        target[0] = '\0';
+        targetLen = 0;
+        return;
+    }
+    targetLen = std::min(id.size(), N - 1);
+    std::memcpy(target.data(), id.data(), targetLen);
+    target[targetLen] = '\0';
+}
 struct ECSMeta {
     ECSMeta() = default;
 
@@ -40,11 +52,11 @@ struct ECSMeta {
     [[nodiscard]] StringView GetUserID() const { return StringView(userID.data(), userIDLen); }
     [[nodiscard]] StringView GetRegionID() const { return StringView(regionID.data(), regionIDLen); }
 
-    [[nodiscard]] bool IsValid() const { return instanceIDLen > 0 && userIDLen > 0 && regionIDLen > 0; }
+    [[nodiscard]] bool IsValid() const {
+        return !GetInstanceID().empty() && !GetUserID().empty() && !GetRegionID().empty();
+    }
 
 private:
-    static const size_t ID_MAX_LENGTH = 128;
-
     std::array<char, ID_MAX_LENGTH> instanceID{};
     size_t instanceIDLen = 0UL;
 
@@ -54,23 +66,49 @@ private:
     std::array<char, ID_MAX_LENGTH> regionID{};
     size_t regionIDLen = 0UL;
 
-    template <size_t N>
-    void SetID(const std::string& id, std::array<char, N>& target, size_t& targetLen) {
-        targetLen = std::min(id.size(), N - 1);
-        std::copy_n(id.begin(), targetLen, target.begin());
-        target[targetLen] = '\0';
-    }
     friend class InstanceIdentityUnittest;
 };
-enum Type {
-    CUSTOM,
-    ECS,
-    ECS_ASSIST,
-    LOCAL,
-};
 struct Hostid {
-    std::string id;
+    enum Type {
+        CUSTOM,
+        ECS,
+        ECS_ASSIST,
+        LOCAL,
+    };
+    static std::string_view TypeToString(Type type) {
+        switch (type) {
+            case Type::CUSTOM:
+                return "CUSTOM";
+            case Type::ECS:
+                return "ECS";
+            case Type::ECS_ASSIST:
+                return "ECS_ASSIST";
+            case Type::LOCAL:
+                return "LOCAL";
+            default:
+                return "UNKNOWN";
+        }
+    }
+
+    Hostid() = default;
+    Hostid(const std::string& id, const Type& type) { SetHostID(id, type); }
+
+    void SetHostID(const std::string& id, const Type& type) {
+        SetID(id, this->id, idLen);
+        this->type = type;
+    }
+
+    [[nodiscard]] StringView GetHostID() const { return StringView(id.data(), idLen); }
+
+    [[nodiscard]] Type GetType() const { return type; }
+
+private:
+    std::array<char, ID_MAX_LENGTH> id{};
+    size_t idLen = 0UL;
+
     Type type;
+
+    friend class InstanceIdentityUnittest;
 };
 class InstanceIdentity {
 public:
@@ -79,8 +117,8 @@ public:
     StringView GetEcsInstanceID() const { return ecsMeta.GetInstanceID(); }
     StringView GetEcsUserID() const { return ecsMeta.GetUserID(); }
     StringView GetEcsRegionID() const { return ecsMeta.GetRegionID(); }
-    StringView GetHostID() const { return hostid.id; }
-    Type GetHostIdType() const { return hostid.type; }
+    StringView GetHostID() const { return hostid.GetHostID(); }
+    Hostid::Type GetHostIdType() const { return hostid.GetType(); }
 
     void SetReady(bool ready) { isReady = ready; }
     void SetECSMeta(const ECSMeta& meta) { ecsMeta = meta; }

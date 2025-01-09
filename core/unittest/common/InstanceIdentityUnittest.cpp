@@ -20,8 +20,6 @@
 
 namespace logtail {
 
-static const size_t ID_MAX_LENGTH = ECSMeta::ID_MAX_LENGTH;
-
 class InstanceIdentityUnittest : public ::testing::Test {
 public:
     void TestECSMeta();
