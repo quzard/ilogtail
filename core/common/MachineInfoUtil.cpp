@@ -534,7 +534,6 @@ HostIdentifier::HostIdentifier() {
     mInstanceIdentityFile = GetAgentDataDir() + PATH_SEPARATOR + "instance_identity";
     getInstanceIdentityFromFile();
     updateHostId(mInstanceIdentity.getWriteBuffer().GetECSMeta());
-    mInstanceIdentity.getWriteBuffer().SetHostID(mHostid);
     mInstanceIdentity.swap();
     if (mHasGeneratedLocalHostId) {
         mInstanceIdentityJson[sRandomHostIdKey] = mLocalHostId;

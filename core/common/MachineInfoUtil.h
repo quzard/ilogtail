@@ -119,6 +119,7 @@ public:
     StringView GetEcsRegionID() const { return ecsMeta.GetRegionID(); }
     StringView GetHostID() const { return hostid.GetHostID(); }
     Hostid::Type GetHostIdType() const { return hostid.GetType(); }
+    [[nodiscard]] const ECSMeta& GetECSMeta() const { return ecsMeta; }
 
     void SetReady(bool ready) { isReady = ready; }
     void SetECSMeta(const ECSMeta& meta) { ecsMeta = meta; }
