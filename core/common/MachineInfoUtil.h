@@ -82,7 +82,7 @@ public:
 
     bool UpdateInstanceIdentity(const ECSMeta& meta);
     void DumpInstanceIdentity();
-    bool SetInstanceIdentityReady() {
+    void SetInstanceIdentityReady() {
         mInstanceIdentity.getWriteBuffer() = mInstanceIdentity.getReadBuffer();
         mInstanceIdentity.getWriteBuffer().isReady = true;
         mInstanceIdentity.swap();
