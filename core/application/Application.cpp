@@ -107,14 +107,14 @@ void Application::Init() {
 
     AppConfig::GetInstance()->LoadAppConfig(GetAgentConfigFile());
 #ifdef __ENTERPRISE__
-    if (!HostIdentifier::Instance()->GetInstanceIdentity()->IsReady()) {
+    if (!InstanceIdentity::Instance()->GetEntity()->IsReady()) {
         // not ready, fetch ecs meta
         ECSMeta ecsMeta;
         if (FetchECSMeta(ecsMeta)) {
-            HostIdentifier::Instance()->UpdateInstanceIdentity(ecsMeta);
+            InstanceIdentity::Instance()->UpdateInstanceIdentity(ecsMeta);
         }
         // 不管ecs meta是否获取成功，都设置instanceIdentity为ready
-        HostIdentifier::Instance()->SetInstanceIdentityReady();
+        InstanceIdentity::Instance()->SetReady();
     }
 #endif
 
@@ -179,7 +179,7 @@ void Application::Init() {
     appInfoJson["UUID"] = Json::Value(Application::GetInstance()->GetUUID());
     appInfoJson["instance_id"] = Json::Value(Application::GetInstance()->GetInstanceId());
 #ifdef __ENTERPRISE__
-    appInfoJson["host_id"] = Json::Value(HostIdentifier::Instance()->GetInstanceIdentity()->GetHostID().to_string());
+    appInfoJson["host_id"] = Json::Value(InstanceIdentity::Instance()->GetEntity()->GetHostID().to_string());
     appInfoJson[GetVersionTag()] = Json::Value(ILOGTAIL_VERSION);
 #else
     appInfoJson[GetVersionTag()] = Json::Value(string(ILOGTAIL_VERSION) + " Community Edition");

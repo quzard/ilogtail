@@ -110,7 +110,7 @@ private:
 
     friend class InstanceIdentityUnittest;
 };
-class InstanceIdentity {
+class Entity {
 public:
     bool IsECSValid() const { return mECSMeta.IsValid(); }
     StringView GetEcsInstanceID() const { return mECSMeta.GetInstanceID(); }
@@ -149,21 +149,22 @@ std::string GetAnyAvailableIP();
 
 bool FetchECSMeta(ECSMeta& metaObj);
 
-class HostIdentifier {
+class InstanceIdentity {
 public:
-    HostIdentifier();
-    static HostIdentifier* Instance() {
-        static HostIdentifier sInstance;
+    InstanceIdentity();
+    static InstanceIdentity* Instance() {
+        static InstanceIdentity sInstance;
         return &sInstance;
     }
 
     // 注意: 不要在类初始化时调用并缓存结果，因为此时ECS元数据可能尚未就绪
     // 建议在实际使用时再调用此方法
-    const InstanceIdentity* GetInstanceIdentity() { return &mInstanceIdentity.getReadBuffer(); }
+    const Entity* GetEntity() { return &mEntity.getReadBuffer(); }
 
     bool UpdateInstanceIdentity(const ECSMeta& meta);
     void DumpInstanceIdentity();
-    void SetInstanceIdentityReady() { mIsReady = true; };
+    void SetReady() { mIsReady = true; };
+    [[nodiscard]] bool IsReady() const { return mIsReady; }
 
 private:
     // 从文件获取ecs元数据
@@ -185,7 +186,7 @@ private:
     bool mHasTriedToGetSerialNumber = false;
     std::string mSerialNumber;
 
-    DoubleBuffer<InstanceIdentity> mInstanceIdentity;
+    DoubleBuffer<Entity> mEntity;
 
     Json::Value mInstanceIdentityJson;
     std::string mInstanceIdentityFile;

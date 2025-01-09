@@ -529,7 +529,7 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
     return metaObj.IsValid();
 }
 
-HostIdentifier::HostIdentifier() {
+InstanceIdentity::InstanceIdentity() {
 #ifdef __ENTERPRISE__
     mInstanceIdentityFile = GetAgentDataDir() + PATH_SEPARATOR + "instance_identity";
     getInstanceIdentityFromFile();
@@ -538,13 +538,13 @@ HostIdentifier::HostIdentifier() {
         DumpInstanceIdentity();
     }
 #else
-    mInstanceIdentity.getWriteBuffer().SetHostID({STRING_FLAG(agent_host_id), Hostid::Type::CUSTOM});
+    mEntity.getWriteBuffer().SetHostID({STRING_FLAG(agent_host_id), Hostid::Type::CUSTOM});
     mIsReady = true;
-    mInstanceIdentity.swap();
+    mEntity.swap();
 #endif
 }
 
-void HostIdentifier::getInstanceIdentityFromFile() {
+void InstanceIdentity::getInstanceIdentityFromFile() {
     if (CheckExistance(mInstanceIdentityFile)) {
         std::string instanceIdentityStr;
         if (ReadFileContent(mInstanceIdentityFile, instanceIdentityStr)) {
@@ -554,19 +554,19 @@ void HostIdentifier::getInstanceIdentityFromFile() {
                 LOG_WARNING(sLogger,
                             ("parse instanceIdentity from file fail",
                              errMsg)("instanceIdentity", instanceIdentityStr)("file", mInstanceIdentityFile));
-                return;
             } else {
                 mInstanceIdentityJson = std::move(doc);
-                // 文件存在且不为非法json，则认为instanceIdentity是ready的
                 ECSMeta meta;
                 if (ParseECSMeta(instanceIdentityStr, meta)) {
-                    mInstanceIdentity.getWriteBuffer().SetECSMeta(meta);
+                    mEntity.getWriteBuffer().SetECSMeta(meta);
+                    // 存在 ecs meta信息，则认为instanceIdentity是ready的
                     mIsReady = true;
                 } else {
                     // 不存在ecs meta信息， 则尝试读取下 random-hostid
                     if (mInstanceIdentityJson.isMember(sRandomHostIdKey)
                         && mInstanceIdentityJson[sRandomHostIdKey].isString()) {
                         mLocalHostId = mInstanceIdentityJson[sRandomHostIdKey].asString();
+                        // 存在 random-hostid，则认为instanceIdentity是ready的
                         mIsReady = true;
                     } else {
                         LOG_ERROR(sLogger,
@@ -581,20 +581,20 @@ void HostIdentifier::getInstanceIdentityFromFile() {
                                                                                             instanceIdentityStr));
         }
     }
-    updateHostId(mInstanceIdentity.getWriteBuffer().GetECSMeta());
-    mInstanceIdentity.swap();
+    // 计算hostid
+    updateHostId(mEntity.getWriteBuffer().GetECSMeta());
+    mEntity.swap();
 }
 
-bool HostIdentifier::UpdateInstanceIdentity(const ECSMeta& meta) {
+bool InstanceIdentity::UpdateInstanceIdentity(const ECSMeta& meta) {
     // 如果 meta合法 且 instanceID 发生变化，则更新ecs元数据
-    if (meta.IsValid() && mInstanceIdentity.getReadBuffer().GetEcsInstanceID() != meta.GetInstanceID()) {
+    if (meta.IsValid() && mEntity.getReadBuffer().GetEcsInstanceID() != meta.GetInstanceID()) {
         LOG_INFO(sLogger,
                  ("ecs instanceID changed, old instanceID",
-                  mInstanceIdentity.getReadBuffer().GetEcsInstanceID())("new instanceID", meta.GetInstanceID()));
-        mInstanceIdentity.getWriteBuffer() = mInstanceIdentity.getReadBuffer();
+                  mEntity.getReadBuffer().GetEcsInstanceID())("new instanceID", meta.GetInstanceID()));
         updateHostId(meta);
-        mInstanceIdentity.getWriteBuffer().SetECSMeta(meta);
-        mInstanceIdentity.swap();
+        mEntity.getWriteBuffer().SetECSMeta(meta);
+        mEntity.swap();
         // 存在ecs meta信息， 只要dump ecs meta信息即可，无需dump random-hostid
         mInstanceIdentityJson.clear();
         mInstanceIdentityJson[sInstanceIdKey] = meta.GetInstanceID().to_string();
@@ -606,7 +606,7 @@ bool HostIdentifier::UpdateInstanceIdentity(const ECSMeta& meta) {
     return false;
 }
 
-void HostIdentifier::DumpInstanceIdentity() {
+void InstanceIdentity::DumpInstanceIdentity() {
     std::string errMsg;
     if (!WriteFile(mInstanceIdentityFile, mInstanceIdentityJson.toStyledString(), errMsg)) {
         LOG_ERROR(sLogger, ("failed to write instanceIdentity to file", mInstanceIdentityFile)("error", errMsg));
@@ -617,7 +617,7 @@ void HostIdentifier::DumpInstanceIdentity() {
     }
 }
 
-void HostIdentifier::updateHostId(const ECSMeta& meta) {
+void InstanceIdentity::updateHostId(const ECSMeta& meta) {
     Hostid newId;
     if (meta.IsValid()) {
         newId = {meta.GetInstanceID().to_string(), Hostid::Type::ECS};
@@ -633,13 +633,17 @@ void HostIdentifier::updateHostId(const ECSMeta& meta) {
         }
     }
     // 只在ID发生变化时更新并记录日志
-    if (mInstanceIdentity.getReadBuffer().GetHostID() != newId.GetHostID()
-        || mInstanceIdentity.getReadBuffer().GetHostIdType() != newId.GetType()) {
+    if (mEntity.getReadBuffer().GetHostID() != newId.GetHostID()
+        || mEntity.getReadBuffer().GetHostIdType() != newId.GetType()) {
         LOG_INFO(sLogger,
-                 ("change hostId, id from", mInstanceIdentity.getReadBuffer().GetHostID())("to", newId.GetHostID())(
-                     "type from", Hostid::TypeToString(mInstanceIdentity.getReadBuffer().GetHostIdType()))(
+                 ("change hostId, id from", mEntity.getReadBuffer().GetHostID())("to", newId.GetHostID())(
+                     "type from", Hostid::TypeToString(mEntity.getReadBuffer().GetHostIdType()))(
                      "to", Hostid::TypeToString(newId.GetType())));
-        mInstanceIdentity.getWriteBuffer().SetHostID(newId);
+        mEntity.getWriteBuffer().SetHostID(newId);
+    } else {
+        // 没有变化时，WriteBuffer的host id维持原状
+        Hostid hostId(mEntity.getReadBuffer().GetHostID().to_string(), mEntity.getReadBuffer().GetHostIdType());
+        mEntity.getWriteBuffer().SetHostID(hostId);
     }
 }
 
@@ -718,7 +722,7 @@ bool FetchECSMeta(ECSMeta& metaObj) {
 }
 
 // 从云助手获取序列号
-void HostIdentifier::getSerialNumberFromEcsAssist() {
+void InstanceIdentity::getSerialNumberFromEcsAssist() {
     if (mHasTriedToGetSerialNumber) {
         return;
     }
@@ -730,7 +734,7 @@ void HostIdentifier::getSerialNumberFromEcsAssist() {
     mHasTriedToGetSerialNumber = true;
 }
 
-void HostIdentifier::getLocalHostId() {
+void InstanceIdentity::getLocalHostId() {
     if (!mLocalHostId.empty()) {
         return;
     }

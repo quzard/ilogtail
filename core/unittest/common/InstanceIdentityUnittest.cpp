@@ -83,14 +83,13 @@ void InstanceIdentityUnittest::TestECSMeta() {
 void InstanceIdentityUnittest::TestUpdateECSMeta() {
     STRING_FLAG(agent_host_id) = "test_host_id";
     {
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetHostID().to_string(),
-                          BOOL_FLAG(agent_host_id));
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetHostIdType(), Hostid::Type::CUSTOM);
-        APSARA_TEST_TRUE(HostIdentifier::Instance()->GetInstanceIdentity()->IsReady());
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetEcsInstanceID().to_string(), "");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetEcsUserID().to_string(), "");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetEcsRegionID().to_string(), "");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->IsECSValid(), false);
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostID().to_string(), BOOL_FLAG(agent_host_id));
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostIdType(), Hostid::Type::CUSTOM);
+        APSARA_TEST_TRUE(InstanceIdentity::Instance()->IsReady());
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsInstanceID().to_string(), "");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsUserID().to_string(), "");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsRegionID().to_string(), "");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->IsECSValid(), false);
     }
     {
         // 更新合法的ecs meta
@@ -98,30 +97,26 @@ void InstanceIdentityUnittest::TestUpdateECSMeta() {
         meta.SetInstanceID("i-1234567890");
         meta.SetUserID("1234567890");
         meta.SetRegionID("cn-hangzhou");
-        HostIdentifier::Instance()->UpdateInstanceIdentity(meta);
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetHostID().to_string(), "i-1234567890");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetHostIdType(), Hostid::Type::ECS);
-        APSARA_TEST_TRUE(HostIdentifier::Instance()->GetInstanceIdentity()->IsReady());
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetEcsInstanceID().to_string(),
-                          "i-1234567890");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetEcsUserID().to_string(), "1234567890");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetEcsRegionID().to_string(),
-                          "cn-hangzhou");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->IsECSValid(), true);
+        InstanceIdentity::Instance()->UpdateInstanceIdentity(meta);
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostID().to_string(), "i-1234567890");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostIdType(), Hostid::Type::ECS);
+        APSARA_TEST_TRUE(InstanceIdentity::Instance()->IsReady());
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsInstanceID().to_string(), "i-1234567890");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsUserID().to_string(), "1234567890");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsRegionID().to_string(), "cn-hangzhou");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->IsECSValid(), true);
     }
     {
         // 更新不合法的ecs meta时，instanceIdentity不更新
         ECSMeta meta;
-        HostIdentifier::Instance()->UpdateInstanceIdentity(meta);
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetHostID().to_string(), "i-1234567890");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetHostIdType(), Hostid::Type::ECS);
-        APSARA_TEST_TRUE(HostIdentifier::Instance()->GetInstanceIdentity()->IsReady());
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetEcsInstanceID().to_string(),
-                          "i-1234567890");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetEcsUserID().to_string(), "1234567890");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->GetEcsRegionID().to_string(),
-                          "cn-hangzhou");
-        APSARA_TEST_EQUAL(HostIdentifier::Instance()->GetInstanceIdentity()->IsECSValid(), true);
+        InstanceIdentity::Instance()->UpdateInstanceIdentity(meta);
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostID().to_string(), "i-1234567890");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetHostIdType(), Hostid::Type::ECS);
+        APSARA_TEST_TRUE(InstanceIdentity::Instance()->IsReady());
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsInstanceID().to_string(), "i-1234567890");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsUserID().to_string(), "1234567890");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->GetEcsRegionID().to_string(), "cn-hangzhou");
+        APSARA_TEST_EQUAL(InstanceIdentity::Instance()->GetEntity()->IsECSValid(), true);
     }
 } // namespace logtail
 
