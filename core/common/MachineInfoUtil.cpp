@@ -53,6 +53,8 @@ const std::string sInstanceIdKey = "instance-id";
 const std::string sOwnerAccountIdKey = "owner-account-id";
 const std::string sRegionIdKey = "region-id";
 const std::string sRandomHostIdKey = "random-hostid";
+const std::string sECSAssistMachineIdKey = "ecs-assist-machine-id";
+
 
 #if defined(_MSC_VER)
 typedef LONG NTSTATUS, *PNTSTATUS;
@@ -530,21 +532,33 @@ bool ParseECSMeta(const std::string& meta, ECSMeta& metaObj) {
 }
 
 InstanceIdentity::InstanceIdentity() {
-#ifdef __ENTERPRISE__
-    mInstanceIdentityFile = GetAgentDataDir() + PATH_SEPARATOR + "instance_identity";
-    getInstanceIdentityFromFile();
-    if (mHasGeneratedLocalHostId) {
-        mInstanceIdentityJson[sRandomHostIdKey] = mLocalHostId;
-        DumpInstanceIdentity();
-    }
-#else
     mEntity.getWriteBuffer().SetHostID({STRING_FLAG(agent_host_id), Hostid::Type::CUSTOM});
-    mIsReady = true;
     mEntity.swap();
-#endif
 }
 
-void InstanceIdentity::getInstanceIdentityFromFile() {
+void InstanceIdentity::SetReady() {
+    mIsReady = true;
+    // hostid为本地hostid时，且为首次生成出来的，则需要dump到文件
+    if (mEntity.getReadBuffer().GetHostIdType() == Hostid::Type::LOCAL && mHasGeneratedLocalHostId) {
+        mInstanceIdentityJson.clear();
+        mInstanceIdentityJson[sRandomHostIdKey] = mLocalHostId;
+        DumpInstanceIdentity();
+    } else if (mEntity.getReadBuffer().GetHostIdType() == Hostid::Type::ECS_ASSIST && !mSerialNumber.empty()) {
+        mInstanceIdentityJson.clear();
+        mInstanceIdentityJson[sECSAssistMachineIdKey] = mSerialNumber;
+        DumpInstanceIdentity();
+    }
+};
+
+void InstanceIdentity::InitFromNetwork() {
+    ECSMeta ecsMeta;
+    if (FetchECSMeta(ecsMeta)) {
+        InstanceIdentity::Instance()->UpdateInstanceIdentity(ecsMeta);
+    }
+}
+
+void InstanceIdentity::InitFromFile() {
+    mInstanceIdentityFile = GetAgentDataDir() + PATH_SEPARATOR + "instance_identity";
     if (CheckExistance(mInstanceIdentityFile)) {
         std::string instanceIdentityStr;
         if (ReadFileContent(mInstanceIdentityFile, instanceIdentityStr)) {
@@ -561,18 +575,20 @@ void InstanceIdentity::getInstanceIdentityFromFile() {
                     mEntity.getWriteBuffer().SetECSMeta(meta);
                     // 存在 ecs meta信息，则认为instanceIdentity是ready的
                     mIsReady = true;
-                } else {
+                } else if (mInstanceIdentityJson.isMember(sRandomHostIdKey)
+                           && mInstanceIdentityJson[sRandomHostIdKey].isString()) {
                     // 不存在ecs meta信息， 则尝试读取下 random-hostid
-                    if (mInstanceIdentityJson.isMember(sRandomHostIdKey)
-                        && mInstanceIdentityJson[sRandomHostIdKey].isString()) {
-                        mLocalHostId = mInstanceIdentityJson[sRandomHostIdKey].asString();
-                        // 存在 random-hostid，则认为instanceIdentity是ready的
-                        mIsReady = true;
-                    } else {
-                        LOG_ERROR(sLogger,
-                                  ("instanceIdentity is ready, but no random-hostid and ecs meta found, file",
-                                   mInstanceIdentityFile)("instanceIdentity", instanceIdentityStr));
-                    }
+                    mLocalHostId = mInstanceIdentityJson[sRandomHostIdKey].asString();
+                    // 存在 random-hostid，则认为instanceIdentity是ready的
+                    mIsReady = true;
+                } else if (mInstanceIdentityJson.isMember(sECSAssistMachineIdKey)
+                           && mInstanceIdentityJson[sECSAssistMachineIdKey].isString()) {
+                    // 存在 ecs-assist-machine-id，则认为instanceIdentity是ready的
+                    mIsReady = true;
+                } else {
+                    LOG_ERROR(sLogger,
+                              ("instanceIdentity is ready, but no random-hostid and ecs meta found, file",
+                               mInstanceIdentityFile)("instanceIdentity", instanceIdentityStr));
                 }
             }
         } else {

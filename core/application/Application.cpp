@@ -107,17 +107,14 @@ void Application::Init() {
 
     AppConfig::GetInstance()->LoadAppConfig(GetAgentConfigFile());
 #ifdef __ENTERPRISE__
+    InstanceIdentity::Instance()->InitFromFile();
     if (!InstanceIdentity::Instance()->IsReady()) {
-        // not ready, fetch ecs meta
-        ECSMeta ecsMeta;
-        if (FetchECSMeta(ecsMeta)) {
-            InstanceIdentity::Instance()->UpdateInstanceIdentity(ecsMeta);
-        }
-        // 不管ecs meta是否获取成功，都设置instanceIdentity为ready
-        InstanceIdentity::Instance()->SetReady();
+        InstanceIdentity::Instance()->InitFromNetwork();
     }
 #endif
-
+    if (!InstanceIdentity::Instance()->IsReady()) {
+        InstanceIdentity::Instance()->SetReady();
+    }
     // Initialize basic information: IP, hostname, etc.
     LoongCollectorMonitor::GetInstance();
 #ifdef __ENTERPRISE__

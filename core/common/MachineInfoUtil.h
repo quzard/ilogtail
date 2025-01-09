@@ -163,12 +163,14 @@ public:
 
     bool UpdateInstanceIdentity(const ECSMeta& meta);
     void DumpInstanceIdentity();
-    void SetReady() { mIsReady = true; };
+    void SetReady();
     [[nodiscard]] bool IsReady() const { return mIsReady; }
 
+    void InitFromFile();
+
+    void InitFromNetwork();
+
 private:
-    // 从文件获取ecs元数据
-    void getInstanceIdentityFromFile();
     // 从云助手获取序列号
     void getSerialNumberFromEcsAssist();
     // 从本地文件获取hostid
