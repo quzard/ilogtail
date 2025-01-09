@@ -107,7 +107,7 @@ void Application::Init() {
 
     AppConfig::GetInstance()->LoadAppConfig(GetAgentConfigFile());
 #ifdef __ENTERPRISE__
-    if (!HostIdentifier::Instance()->GetInstanceIdentity().isReady) {
+    if (!HostIdentifier::Instance()->GetInstanceIdentity()->IsReady()) {
         // not ready, fetch ecs meta
         ECSMeta ecsMeta;
         if (FetchECSMeta(ecsMeta)) {
@@ -179,7 +179,7 @@ void Application::Init() {
     appInfoJson["UUID"] = Json::Value(Application::GetInstance()->GetUUID());
     appInfoJson["instance_id"] = Json::Value(Application::GetInstance()->GetInstanceId());
 #ifdef __ENTERPRISE__
-    appInfoJson["host_id"] = Json::Value(HostIdentifier::Instance()->GetInstanceIdentity().hostid.id);
+    appInfoJson["host_id"] = Json::Value(HostIdentifier::Instance()->GetInstanceIdentity()->GetHostID().to_string());
     appInfoJson[GetVersionTag()] = Json::Value(ILOGTAIL_VERSION);
 #else
     appInfoJson[GetVersionTag()] = Json::Value(string(ILOGTAIL_VERSION) + " Community Edition");
