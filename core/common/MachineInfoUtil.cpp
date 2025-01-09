@@ -561,8 +561,9 @@ void InstanceIdentity::InitFromNetwork() {
     }
 }
 
-void InstanceIdentity::InitFromFile() {
+bool InstanceIdentity::InitFromFile() {
     mInstanceIdentityFile = GetAgentDataDir() + PATH_SEPARATOR + "instance_identity";
+    bool initSuccess = false;
     if (CheckExistance(mInstanceIdentityFile)) {
         std::string instanceIdentityStr;
         if (ReadFileContent(mInstanceIdentityFile, instanceIdentityStr)) {
@@ -578,17 +579,17 @@ void InstanceIdentity::InitFromFile() {
                 if (ParseECSMeta(instanceIdentityStr, meta)) {
                     mEntity.getWriteBuffer().SetECSMeta(meta);
                     // 存在 ecs meta信息，则认为instanceIdentity是ready的
-                    mNeedFetchECSMeta = false;
+                    initSuccess = true;
                 } else if (mInstanceIdentityJson.isMember(sRandomHostIdKey)
                            && mInstanceIdentityJson[sRandomHostIdKey].isString()) {
                     // 不存在ecs meta信息， 则尝试读取下 random-hostid
                     mLocalHostId = mInstanceIdentityJson[sRandomHostIdKey].asString();
                     // 存在 random-hostid，则认为instanceIdentity是ready的
-                    mNeedFetchECSMeta = false;
+                    initSuccess = true;
                 } else if (mInstanceIdentityJson.isMember(sECSAssistMachineIdKey)
                            && mInstanceIdentityJson[sECSAssistMachineIdKey].isString()) {
                     // 存在 ecs-assist-machine-id，则认为instanceIdentity是ready的
-                    mNeedFetchECSMeta = false;
+                    initSuccess = true;
                 } else {
                     LOG_ERROR(sLogger,
                               ("instanceIdentity is ready, but no random-hostid and ecs meta found, file",
@@ -604,14 +605,15 @@ void InstanceIdentity::InitFromFile() {
     // 计算hostid
     updateHostId(mEntity.getWriteBuffer().GetECSMeta());
     mEntity.swap();
+    return initSuccess;
 }
 
 bool InstanceIdentity::UpdateInstanceIdentity(const ECSMeta& meta) {
-    // 如果 meta合法 且 instanceID 发生变化，则更新ecs元数据
+    // 如果 meta合法 且 mInstanceID 发生变化，则更新ecs元数据
     if (meta.IsValid() && mEntity.getReadBuffer().GetEcsInstanceID() != meta.GetInstanceID()) {
         LOG_INFO(sLogger,
-                 ("ecs instanceID changed, old instanceID",
-                  mEntity.getReadBuffer().GetEcsInstanceID())("new instanceID", meta.GetInstanceID()));
+                 ("ecs mInstanceID changed, old mInstanceID",
+                  mEntity.getReadBuffer().GetEcsInstanceID())("new mInstanceID", meta.GetInstanceID()));
         updateHostId(meta);
         mEntity.getWriteBuffer().SetECSMeta(meta);
         mEntity.swap();

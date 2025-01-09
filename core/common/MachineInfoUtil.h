@@ -42,29 +42,29 @@ inline void SetID(const std::string& id, std::array<char, N>& target, size_t& ta
 struct ECSMeta {
     ECSMeta() = default;
 
-    void SetInstanceID(const std::string& id) { SetID(id, instanceID, instanceIDLen); }
+    void SetInstanceID(const std::string& id) { SetID(id, mInstanceID, mInstanceIDLen); }
 
-    void SetUserID(const std::string& id) { SetID(id, userID, userIDLen); }
+    void SetUserID(const std::string& id) { SetID(id, mUserID, mUserIDLen); }
 
-    void SetRegionID(const std::string& id) { SetID(id, regionID, regionIDLen); }
+    void SetRegionID(const std::string& id) { SetID(id, mRegionID, mRegionIDLen); }
 
-    [[nodiscard]] StringView GetInstanceID() const { return StringView(instanceID.data(), instanceIDLen); }
-    [[nodiscard]] StringView GetUserID() const { return StringView(userID.data(), userIDLen); }
-    [[nodiscard]] StringView GetRegionID() const { return StringView(regionID.data(), regionIDLen); }
+    [[nodiscard]] StringView GetInstanceID() const { return StringView(mInstanceID.data(), mInstanceIDLen); }
+    [[nodiscard]] StringView GetUserID() const { return StringView(mUserID.data(), mUserIDLen); }
+    [[nodiscard]] StringView GetRegionID() const { return StringView(mRegionID.data(), mRegionIDLen); }
 
     [[nodiscard]] bool IsValid() const {
         return !GetInstanceID().empty() && !GetUserID().empty() && !GetRegionID().empty();
     }
 
 private:
-    std::array<char, ID_MAX_LENGTH> instanceID{};
-    size_t instanceIDLen = 0UL;
+    std::array<char, ID_MAX_LENGTH> mInstanceID{};
+    size_t mInstanceIDLen = 0UL;
 
-    std::array<char, ID_MAX_LENGTH> userID{};
-    size_t userIDLen = 0UL;
+    std::array<char, ID_MAX_LENGTH> mUserID{};
+    size_t mUserIDLen = 0UL;
 
-    std::array<char, ID_MAX_LENGTH> regionID{};
-    size_t regionIDLen = 0UL;
+    std::array<char, ID_MAX_LENGTH> mRegionID{};
+    size_t mRegionIDLen = 0UL;
 
     friend class InstanceIdentityUnittest;
 };
@@ -94,19 +94,19 @@ struct Hostid {
     Hostid(const std::string& id, const Type& type) { SetHostID(id, type); }
 
     void SetHostID(const std::string& id, const Type& type) {
-        SetID(id, this->id, idLen);
-        this->type = type;
+        SetID(id, mId, mIdLen);
+        mType = type;
     }
 
-    [[nodiscard]] StringView GetHostID() const { return StringView(id.data(), idLen); }
+    [[nodiscard]] StringView GetHostID() const { return StringView(mId.data(), mIdLen); }
 
-    [[nodiscard]] Type GetType() const { return type; }
+    [[nodiscard]] Type GetType() const { return mType; }
 
 private:
-    std::array<char, ID_MAX_LENGTH> id{};
-    size_t idLen = 0UL;
+    std::array<char, ID_MAX_LENGTH> mId{};
+    size_t mIdLen = 0UL;
 
-    Type type;
+    Type mType;
 
     friend class InstanceIdentityUnittest;
 };
@@ -163,10 +163,8 @@ public:
 
     bool UpdateInstanceIdentity(const ECSMeta& meta);
     void DumpInstanceIdentity();
-    void SetReady();
-    [[nodiscard]] bool NeedFetchECSMeta() const { return mNeedFetchECSMeta; }
 
-    void InitFromFile();
+    bool InitFromFile();
 
     void InitFromNetwork();
 
@@ -184,7 +182,6 @@ private:
 #else
     std::string mEcsAssistMachineIdFile = "/usr/local/share/aliyun-assist/hybrid/machine-id";
 #endif
-    bool mNeedFetchECSMeta = false;
 
     bool mHasTriedToGetSerialNumber = false;
     std::string mSerialNumber;

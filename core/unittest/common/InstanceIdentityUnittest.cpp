@@ -39,11 +39,11 @@ void InstanceIdentityUnittest::TestECSMeta() {
         meta.SetRegionID("cn-hangzhou");
         APSARA_TEST_TRUE(meta.IsValid());
         APSARA_TEST_EQUAL(meta.GetInstanceID().to_string(), "i-1234567890");
-        APSARA_TEST_EQUAL(meta.instanceIDLen, 12);
+        APSARA_TEST_EQUAL(meta.mInstanceIDLen, 12);
         APSARA_TEST_EQUAL(meta.GetUserID().to_string(), "1234567890");
-        APSARA_TEST_EQUAL(meta.userIDLen, 10);
+        APSARA_TEST_EQUAL(meta.mUserIDLen, 10);
         APSARA_TEST_EQUAL(meta.GetRegionID().to_string(), "cn-hangzhou");
-        APSARA_TEST_EQUAL(meta.regionIDLen, 11);
+        APSARA_TEST_EQUAL(meta.mRegionIDLen, 11);
     }
     {
         ECSMeta meta;
@@ -55,14 +55,15 @@ void InstanceIdentityUnittest::TestECSMeta() {
     {
         ECSMeta meta;
         for (size_t i = 0; i < ID_MAX_LENGTH; ++i) {
-            APSARA_TEST_EQUAL(meta.instanceID[i], '\0');
-            APSARA_TEST_EQUAL(meta.userID[i], '\0');
-            APSARA_TEST_EQUAL(meta.regionID[i], '\0');
+            APSARA_TEST_EQUAL(meta.mInstanceID[i], '\0');
+            APSARA_TEST_EQUAL(meta.mUserID[i], '\0');
+            APSARA_TEST_EQUAL(meta.mRegionID[i], '\0');
         }
     }
     {
+        // 测试设置字符串长度超过ID_MAX_LENGTH的情况
         ECSMeta meta;
-        std::array<char, ID_MAX_LENGTH + 1> testString{};
+        std::array<char, ID_MAX_LENGTH + 10> testString{};
         for (size_t i = 0; i < testString.size(); ++i) {
             testString[i] = 'a';
         }

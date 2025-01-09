@@ -107,8 +107,7 @@ void Application::Init() {
 
     AppConfig::GetInstance()->LoadAppConfig(GetAgentConfigFile());
 #ifdef __ENTERPRISE__
-    InstanceIdentity::Instance()->InitFromFile();
-    if (InstanceIdentity::Instance()->NeedFetchECSMeta()) {
+    if (!InstanceIdentity::Instance()->InitFromFile()) {
         InstanceIdentity::Instance()->InitFromNetwork();
         InstanceIdentity::Instance()->DumpInstanceIdentity();
     }
