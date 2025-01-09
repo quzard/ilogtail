@@ -14,6 +14,8 @@
 
 #include "plugin/flusher/sls/SLSClientManager.h"
 
+#include "MachineInfoUtil.h"
+
 #ifdef __linux__
 #include <sys/utsname.h>
 #endif
@@ -108,7 +110,7 @@ string SLSClientManager::GetRunningEnvironment() {
         // containers in K8S will possess the above env
         if (AppConfig::GetInstance()->IsPurageContainerMode()) {
             env = "K8S-Daemonset";
-        } else if (PingEndpoint("100.100.100.200", "/latest/meta-data")) {
+        } else if (HostIdentifier::Instance()->GetInstanceIdentity().ecsMeta.isValid) {
             // containers in ACK can be connected to the above address, see
             // https://help.aliyun.com/document_detail/108460.html#section-akf-lwh-1gb.
             // Note: we can not distinguish ACK from K8S built on ECS
@@ -118,7 +120,7 @@ string SLSClientManager::GetRunningEnvironment() {
         }
     } else if (AppConfig::GetInstance()->IsPurageContainerMode() || getenv("ALIYUN_LOGTAIL_CONFIG")) {
         env = "Docker";
-    } else if (PingEndpoint("100.100.100.200", "/latest/meta-data")) {
+    } else if (HostIdentifier::Instance()->GetInstanceIdentity().ecsMeta.isValid) {
         env = "ECS";
     } else {
         env = "Others";
