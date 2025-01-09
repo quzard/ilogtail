@@ -67,6 +67,7 @@ void InstanceIdentityUnittest::TestECSMeta() {
         for (size_t i = 0; i < testString.size(); ++i) {
             testString[i] = 'a';
         }
+        testString[testString.size() - 1] = '\0';
         meta.SetInstanceID(testString.data());
         meta.SetUserID(testString.data());
         meta.SetRegionID(testString.data());
