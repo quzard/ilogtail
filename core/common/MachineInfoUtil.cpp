@@ -533,7 +533,7 @@ HostIdentifier::HostIdentifier() {
 #ifdef __ENTERPRISE__
     mInstanceIdentityFile = GetAgentDataDir() + PATH_SEPARATOR + "instance_identity";
     getInstanceIdentityFromFile();
-    updateHostId();
+    updateHostId(mInstanceIdentity.getWriteBuffer().GetECSMeta());
     mInstanceIdentity.getWriteBuffer().SetHostID(mHostid);
     mInstanceIdentity.swap();
     if (mHasGeneratedLocalHostId) {
@@ -564,8 +564,9 @@ void HostIdentifier::getInstanceIdentityFromFile() {
         mInstanceIdentityJson = std::move(doc);
         // 文件存在且不为非法json，则认为instanceIdentity是ready的
         mInstanceIdentity.getWriteBuffer().SetReady(true);
-        if (ParseECSMeta(instanceIdentityStr, mMetadata)) {
-            mInstanceIdentity.getWriteBuffer().SetECSMeta(mMetadata);
+        ECSMeta meta;
+        if (ParseECSMeta(instanceIdentityStr, meta)) {
+            mInstanceIdentity.getWriteBuffer().SetECSMeta(meta);
         } else {
             // 不存在ecs meta信息， 则尝试读取下 random-hostid
             if (mInstanceIdentityJson.isMember(sRandomHostIdKey)
@@ -586,15 +587,13 @@ void HostIdentifier::getInstanceIdentityFromFile() {
 
 bool HostIdentifier::UpdateInstanceIdentity(const ECSMeta& meta) {
     // 如果 instanceID 发生变化，则更新ecs元数据
-    if (mMetadata.GetInstanceID() != meta.GetInstanceID()) {
+    if (mInstanceIdentity.getReadBuffer().GetEcsInstanceID() != meta.GetInstanceID()) {
         LOG_INFO(sLogger,
-                 ("ecs instanceID changed, old instanceID", mMetadata.GetInstanceID())("new instanceID",
-                                                                                       meta.GetInstanceID()));
-        mMetadata = meta;
-        updateHostId();
+                 ("ecs instanceID changed, old instanceID",
+                  mInstanceIdentity.getReadBuffer().GetEcsInstanceID())("new instanceID", meta.GetInstanceID()));
+        updateHostId(meta);
         mInstanceIdentity.getWriteBuffer().SetReady(true);
-        mInstanceIdentity.getWriteBuffer().SetECSMeta(mMetadata);
-        mInstanceIdentity.getWriteBuffer().SetHostID(mHostid);
+        mInstanceIdentity.getWriteBuffer().SetECSMeta(meta);
         mInstanceIdentity.swap();
         // 存在ecs meta信息， 只要dump ecs meta信息即可，无需dump random-hostid
         mInstanceIdentityJson.clear();
@@ -618,10 +617,10 @@ void HostIdentifier::DumpInstanceIdentity() {
     }
 }
 
-void HostIdentifier::updateHostId() {
+void HostIdentifier::updateHostId(const ECSMeta& meta) {
     Hostid newId;
-    if (mMetadata.IsValid()) {
-        newId = {mMetadata.GetInstanceID().to_string(), Hostid::Type::ECS};
+    if (meta.IsValid()) {
+        newId = {meta.GetInstanceID().to_string(), Hostid::Type::ECS};
     } else {
         getSerialNumberFromEcsAssist();
         if (!mSerialNumber.empty()) {
@@ -634,12 +633,13 @@ void HostIdentifier::updateHostId() {
         }
     }
     // 只在ID发生变化时更新并记录日志
-    if (mHostid.GetHostID() != newId.GetHostID() || mHostid.GetType() != newId.GetType()) {
-        LOG_INFO(
-            sLogger,
-            ("change hostId, id from", mHostid.GetHostID())("to", newId.GetHostID())(
-                "type from", Hostid::TypeToString(mHostid.GetType()))("to", Hostid::TypeToString(newId.GetType())));
-        mHostid = newId;
+    if (mInstanceIdentity.getReadBuffer().GetHostID() != newId.GetHostID()
+        || mInstanceIdentity.getReadBuffer().GetHostIdType() != newId.GetType()) {
+        LOG_INFO(sLogger,
+                 ("change hostId, id from", mInstanceIdentity.getReadBuffer().GetHostID())("to", newId.GetHostID())(
+                     "type from", Hostid::TypeToString(mInstanceIdentity.getReadBuffer().GetHostIdType()))(
+                     "to", Hostid::TypeToString(newId.GetType())));
+        mInstanceIdentity.getWriteBuffer().SetHostID(newId);
     }
 }
 

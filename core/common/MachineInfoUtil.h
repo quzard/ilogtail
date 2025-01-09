@@ -179,7 +179,7 @@ private:
     // 从本地文件获取hostid
     void getLocalHostId();
 
-    void updateHostId();
+    void updateHostId(const ECSMeta& meta);
 
 #if defined(_MSC_VER)
     std::string mEcsAssistMachineIdFile = "C:\\ProgramData\\aliyun\\assist\\hybrid\\machine-id";
@@ -190,9 +190,7 @@ private:
     std::string mSerialNumber;
 
     DoubleBuffer<InstanceIdentity> mInstanceIdentity;
-    Hostid mHostid;
 
-    ECSMeta mMetadata;
     Json::Value mInstanceIdentityJson;
     std::string mInstanceIdentityFile;
     bool mHasGeneratedLocalHostId = false;
