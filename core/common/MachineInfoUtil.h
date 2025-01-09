@@ -112,23 +112,23 @@ private:
 };
 class InstanceIdentity {
 public:
-    bool IsReady() const { return isReady; }
-    bool IsECSValid() const { return ecsMeta.IsValid(); }
-    StringView GetEcsInstanceID() const { return ecsMeta.GetInstanceID(); }
-    StringView GetEcsUserID() const { return ecsMeta.GetUserID(); }
-    StringView GetEcsRegionID() const { return ecsMeta.GetRegionID(); }
-    StringView GetHostID() const { return hostid.GetHostID(); }
-    Hostid::Type GetHostIdType() const { return hostid.GetType(); }
-    [[nodiscard]] const ECSMeta& GetECSMeta() const { return ecsMeta; }
+    bool IsReady() const { return mIsReady; }
+    bool IsECSValid() const { return mECSMeta.IsValid(); }
+    StringView GetEcsInstanceID() const { return mECSMeta.GetInstanceID(); }
+    StringView GetEcsUserID() const { return mECSMeta.GetUserID(); }
+    StringView GetEcsRegionID() const { return mECSMeta.GetRegionID(); }
+    StringView GetHostID() const { return mHostid.GetHostID(); }
+    Hostid::Type GetHostIdType() const { return mHostid.GetType(); }
+    [[nodiscard]] const ECSMeta& GetECSMeta() const { return mECSMeta; }
 
-    void SetReady(bool ready) { isReady = ready; }
-    void SetECSMeta(const ECSMeta& meta) { ecsMeta = meta; }
-    void SetHostID(const Hostid& hostid) { this->hostid = hostid; }
+    void SetReady(bool ready) { mIsReady = ready; }
+    void SetECSMeta(const ECSMeta& meta) { mECSMeta = meta; }
+    void SetHostID(const Hostid& hostid) { mHostid = hostid; }
 
 private:
-    bool isReady = false;
-    ECSMeta ecsMeta;
-    Hostid hostid;
+    bool mIsReady = false;
+    ECSMeta mECSMeta;
+    Hostid mHostid;
 };
 
 std::string GetOsDetail();
