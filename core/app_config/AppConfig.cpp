@@ -161,9 +161,9 @@ DEFINE_FLAG_STRING(metrics_report_method,
                    "method to report metrics (default none, means logtail will not report metrics)",
                    "sls");
 
-DEFINE_FLAG_STRING(loong_collector_operator_service, "loong collector operator service", "");
-DEFINE_FLAG_INT32(loong_collector_operator_service_port, "loong collector operator service port", 8888);
-DEFINE_FLAG_INT32(loong_collector_k8s_meta_service_port, "loong collector operator service port", 9000);
+DEFINE_FLAG_STRING(collector_operator_service, "loong collector operator service", "");
+DEFINE_FLAG_INT32(collector_operator_service_port, "loong collector operator service port", 8888);
+DEFINE_FLAG_INT32(collector_k8s_meta_service_port, "loong collector operator service port", 9000);
 DEFINE_FLAG_STRING(_pod_name_, "agent pod name", "");
 
 DEFINE_FLAG_STRING(app_info_file, "", "app_info.json");
@@ -247,11 +247,11 @@ void CreateAgentDir() {
         } \
     }
 
-    PROCESSDIRFLAG(loongcollector_conf_dir);
-    PROCESSDIRFLAG(loongcollector_log_dir);
-    PROCESSDIRFLAG(loongcollector_data_dir);
-    PROCESSDIRFLAG(loongcollector_run_dir);
-    PROCESSDIRFLAG(loongcollector_third_party_dir);
+    PROCESSDIRFLAG(conf_dir);
+    PROCESSDIRFLAG(log_dir);
+    PROCESSDIRFLAG(data_dir);
+    PROCESSDIRFLAG(run_dir);
+    PROCESSDIRFLAG(third_party_dir);
 }
 
 std::string GetAgentThirdPartyDir() {
@@ -262,7 +262,7 @@ std::string GetAgentThirdPartyDir() {
     if (BOOL_FLAG(logtail_mode)) {
         dir = AppConfig::GetInstance()->GetLoongcollectorConfDir();
     } else {
-        dir = STRING_FLAG(loongcollector_third_party_dir) + PATH_SEPARATOR;
+        dir = STRING_FLAG(third_party_dir) + PATH_SEPARATOR;
     }
     return dir;
 }
@@ -278,7 +278,7 @@ std::string GetAgentLogDir() {
     if (BOOL_FLAG(logtail_mode)) {
         dir = GetProcessExecutionDir();
     } else {
-        dir = STRING_FLAG(loongcollector_log_dir) + PATH_SEPARATOR;
+        dir = STRING_FLAG(log_dir) + PATH_SEPARATOR;
     }
 #endif
     return dir;
@@ -372,7 +372,7 @@ std::string GetAgentDataDir() {
     if (BOOL_FLAG(logtail_mode)) {
         dir = AppConfig::GetInstance()->GetLoongcollectorConfDir() + PATH_SEPARATOR + "checkpoint";
     } else {
-        dir = STRING_FLAG(loongcollector_data_dir) + PATH_SEPARATOR;
+        dir = STRING_FLAG(data_dir) + PATH_SEPARATOR;
     }
 #endif
     if (!CheckExistance(dir)) {
@@ -396,7 +396,7 @@ std::string GetAgentConfDir() {
     if (BOOL_FLAG(logtail_mode)) {
         dir = GetProcessExecutionDir();
     } else {
-        dir = STRING_FLAG(loongcollector_conf_dir) + PATH_SEPARATOR;
+        dir = STRING_FLAG(conf_dir) + PATH_SEPARATOR;
     }
 #endif
     return dir;
@@ -413,7 +413,7 @@ std::string GetAgentRunDir() {
     if (BOOL_FLAG(logtail_mode)) {
         dir = GetProcessExecutionDir();
     } else {
-        dir = STRING_FLAG(loongcollector_run_dir) + PATH_SEPARATOR;
+        dir = STRING_FLAG(run_dir) + PATH_SEPARATOR;
     }
 #endif
     return dir;
@@ -1457,11 +1457,7 @@ void AppConfig::InitEnvMapping(const std::string& envStr, std::map<std::string, 
     }
 }
 void AppConfig::SetConfigFlag(const std::string& flagName, const std::string& value) {
-    static set<string> sIgnoreFlagSet = {"loongcollector_conf_dir",
-                                         "loongcollector_log_dir",
-                                         "loongcollector_data_dir",
-                                         "loongcollector_run_dir",
-                                         "logtail_mode"};
+    static set<string> sIgnoreFlagSet = {"conf_dir", "log_dir", "data_dir", "run_dir", "logtail_mode"};
     if (sIgnoreFlagSet.find(flagName) != sIgnoreFlagSet.end()) {
         return;
     }

@@ -38,15 +38,15 @@
 
 using namespace std;
 
-DECLARE_FLAG_STRING(loong_collector_operator_service);
-DECLARE_FLAG_INT32(loong_collector_operator_service_port);
+DECLARE_FLAG_STRING(collector_operator_service);
+DECLARE_FLAG_INT32(collector_operator_service_port);
 DECLARE_FLAG_STRING(_pod_name_);
 
 namespace logtail {
 
 PrometheusInputRunner::PrometheusInputRunner()
-    : mServiceHost(STRING_FLAG(loong_collector_operator_service)),
-      mServicePort(INT32_FLAG(loong_collector_operator_service_port)),
+    : mServiceHost(STRING_FLAG(collector_operator_service)),
+      mServicePort(INT32_FLAG(collector_operator_service_port)),
       mPodName(STRING_FLAG(_pod_name_)),
       mEventPool(true),
       mUnRegisterMs(0) {
