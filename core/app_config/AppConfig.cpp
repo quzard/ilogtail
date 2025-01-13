@@ -210,14 +210,21 @@ const uint32_t NO_FALL_BACK_FAIL_PERCENTAGE = 10;
 const uint32_t SLOW_FALL_BACK_FAIL_PERCENTAGE = 40;
 
 std::string AppConfig::sLocalConfigDir = "local";
+
+
+std::string GetLoongcollectorEnv(const std::string& flag_name) {
+    static const std::string sLoongcollectorEnvPrefix = "LOONG_";
+    return sLoongcollectorEnvPrefix + ToUpperCaseString(flag_name);
+}
+
 void CreateAgentDir() {
     try {
-        const char* value = getenv("logtail_mode");
+        const char* value = getenv("LOGTAIL_MODE");
         if (value != NULL) {
             STRING_FLAG(logtail_mode) = StringTo<bool>(value);
         }
     } catch (const exception& e) {
-        std::cout << "load config from env error, env_name:logtail_mode, error:" << e.what() << std::endl;
+        std::cout << "load config from env error, env_name:LOGTAIL_MODE, error:" << e.what() << std::endl;
     }
     if (BOOL_FLAG(logtail_mode)) {
         return;
@@ -226,7 +233,7 @@ void CreateAgentDir() {
     Json::Value emptyJson;
 #define PROCESSDIRFLAG(flag_name) \
     try { \
-        const char* value = getenv(#flag_name); \
+        const char* value = getenv(GetLoongcollectorEnv(#flag_name).c_str()); \
         if (value != NULL) { \
             STRING_FLAG(flag_name) = StringTo<string>(value); \
         } \
