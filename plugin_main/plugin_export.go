@@ -118,10 +118,14 @@ func LoadGlobalConfig(jsonStr string) int {
 			logger.InitLogger()
 			for _, log := range flags.LogsWaitToPrint {
 				switch log.LogType {
-				case "error":
+				case flags.LogTypeError:
 					logger.Error(context.Background(), log.Content)
-				case "info":
+				case flags.LogTypeInfo:
 					logger.Info(context.Background(), log.Content)
+				case flags.LogTypeDebug:
+					logger.Debug(context.Background(), log.Content)
+				case flags.LogTypeWarn:
+					logger.Warning(context.Background(), log.Content)
 				}
 			}
 			logger.Info(context.Background(), "load global config", jsonStr)

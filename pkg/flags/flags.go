@@ -47,8 +47,18 @@ var (
 	flusherLoadOnce sync.Once
 )
 
+type LogType string
+
+const (
+	LogTypeInfo  LogType = "info"
+	LogTypeDebug LogType = "debug"
+	LogTypeWarn  LogType = "warn"
+	LogTypeError LogType = "error"
+)
+
+// LogInfo contains metadata about a log message
 type LogInfo struct {
-	LogType string
+	LogType LogType
 	Content string
 }
 
@@ -122,7 +132,7 @@ var (
 	HTTPLoadFlag     = flag.Bool("http-load", false, "export http endpoint for load plugin config.")
 	FileIOFlag       = flag.Bool("file-io", false, "use file for input or output.")
 	InputFile        = flag.String("input-file", "./input.log", "input file")
-	InputField       = flag.String("input-field", "Content", "input file")
+	InputField       = flag.String("input-field", "content", "input file")
 	InputLineLimit   = flag.Int("input-line-limit", 1000, "input file")
 	OutputFile       = flag.String("output-file", "./output.log", "output file")
 	StatefulSetFlag  = flag.Bool("ALICLOUD_LOG_STATEFULSET_FLAG", false, "alibaba log export ports flag, set true if you want to use it")
@@ -133,72 +143,70 @@ var (
 	ClusterType          = flag.String("GLOBAL_CLUSTER_TYPE", "", "cluster type, supporting ack, one, asi and k8s")
 )
 
-// Helper function to lookup flags and handle common error case
+// lookupFlag returns the flag.Flag for the given name, or an error if not found
 func lookupFlag(name string) (*flag.Flag, error) {
-	f := flag.Lookup(name)
-	if f == nil {
-		return nil, fmt.Errorf("flag %s not found", name)
+	if f := flag.Lookup(name); f != nil {
+		return f, nil
 	}
-	return f, nil
+	return nil, fmt.Errorf("flag %s not found", name)
 }
 
-// GetStringFlag returns the string value of the named flag.
-// Returns empty string and error if flag not found.
+// GetStringFlag returns the string value of the named flag
 func GetStringFlag(name string) (string, error) {
-	f, err := lookupFlag(name)
-	if err != nil {
+	if f, err := lookupFlag(name); err != nil {
 		return "", err
+	} else {
+		return f.Value.String(), nil
 	}
-	return f.Value.String(), nil
 }
 
-// GetBoolFlag returns the bool value of the named flag.
-// Returns false and error if flag not found or type mismatch.
+// GetBoolFlag returns the bool value of the named flag
 func GetBoolFlag(name string) (bool, error) {
 	f, err := lookupFlag(name)
 	if err != nil {
 		return false, err
 	}
+
 	if v, ok := f.Value.(flag.Getter); ok {
-		if b, ok := v.Get().(bool); ok {
-			return b, nil
+		if val, ok := v.Get().(bool); ok {
+			return val, nil
 		}
 	}
 	return false, fmt.Errorf("flag %s is not bool type", name)
 }
 
-// GetIntFlag returns the int value of the named flag.
-// Returns 0 and error if flag not found or type mismatch.
+// GetIntFlag returns the int value of the named flag
 func GetIntFlag(name string) (int, error) {
 	f, err := lookupFlag(name)
 	if err != nil {
 		return 0, err
 	}
+
 	if v, ok := f.Value.(flag.Getter); ok {
-		if i, ok := v.Get().(int); ok {
-			return i, nil
+		if val, ok := v.Get().(int); ok {
+			return val, nil
 		}
 	}
 	return 0, fmt.Errorf("flag %s is not int type", name)
 }
 
-// GetFloat64Flag returns the float64 value of the named flag.
-// Returns 0.0 and error if flag not found or type mismatch.
+// GetFloat64Flag returns the float64 value of the named flag
 func GetFloat64Flag(name string) (float64, error) {
 	f, err := lookupFlag(name)
 	if err != nil {
 		return 0.0, err
 	}
+
 	if v, ok := f.Value.(flag.Getter); ok {
-		if f64, ok := v.Get().(float64); ok {
-			return f64, nil
+		if val, ok := v.Get().(float64); ok {
+			return val, nil
 		}
 	}
 	return 0.0, fmt.Errorf("flag %s is not float64 type", name)
 }
 
-// SetStringFlag sets the string value of the named flag.
-func SetStringFlag(name string, value string) error {
+// SetStringFlag sets the string value of the named flag
+func SetStringFlag(name, value string) error {
 	f, err := lookupFlag(name)
 	if err != nil {
 		return err
@@ -206,7 +214,7 @@ func SetStringFlag(name string, value string) error {
 	return f.Value.Set(value)
 }
 
-// SetBoolFlag sets the bool value of the named flag.
+// SetBoolFlag sets the bool value of the named flag
 func SetBoolFlag(name string, value bool) error {
 	f, err := lookupFlag(name)
 	if err != nil {
@@ -215,7 +223,7 @@ func SetBoolFlag(name string, value bool) error {
 	return f.Value.Set(strconv.FormatBool(value))
 }
 
-// SetIntFlag sets the int value of the named flag.
+// SetIntFlag sets the int value of the named flag
 func SetIntFlag(name string, value int) error {
 	f, err := lookupFlag(name)
 	if err != nil {
@@ -224,7 +232,7 @@ func SetIntFlag(name string, value int) error {
 	return f.Value.Set(strconv.Itoa(value))
 }
 
-// SetFloat64Flag sets the float64 value of the named flag.
+// SetFloat64Flag sets the float64 value of the named flag
 func SetFloat64Flag(name string, value float64) error {
 	f, err := lookupFlag(name)
 	if err != nil {
@@ -233,38 +241,38 @@ func SetFloat64Flag(name string, value float64) error {
 	return f.Value.Set(strconv.FormatFloat(value, 'g', -1, 64))
 }
 
+// LoadEnvToFlags loads environment variables into flags
 func LoadEnvToFlags() {
-	// 获取到所有的env
-	envs := os.Environ()
-	for _, env := range envs {
-		parts := strings.SplitN(env, "=", 2)
-		if len(parts) != 2 {
+	for _, env := range os.Environ() {
+		name, value, found := strings.Cut(env, "=")
+		if !found {
 			continue
 		}
-		flagName := parts[0]
-		value := parts[1]
-		if !strings.HasPrefix(flagName, LoongcollectorEnvPrefix) {
+
+		if !strings.HasPrefix(name, LoongcollectorEnvPrefix) {
 			continue
 		}
-		flagName = strings.ToLower(strings.TrimPrefix(flagName, LoongcollectorEnvPrefix))
+
+		flagName := strings.ToLower(strings.TrimPrefix(name, LoongcollectorEnvPrefix))
 		f := flag.Lookup(flagName)
 		if f == nil {
 			continue
 		}
-		// Get current value and type before change
+
 		oldValue := f.Value.String()
-		// Try to determine flag type using type assertion
 		getter, ok := f.Value.(flag.Getter)
 		if !ok {
 			LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
-				LogType: "error",
+				LogType: LogTypeError,
 				Content: fmt.Sprintf("Flag does not support Get operation, flag: %s, value: %s", flagName, oldValue),
 			})
 			continue
 		}
-		// Get actual value to determine type
+
 		actualValue := getter.Get()
 		var err error
+
+		// Validate value type before setting
 		switch actualValue.(type) {
 		case bool:
 			_, err = strconv.ParseBool(value)
@@ -275,36 +283,34 @@ func LoadEnvToFlags() {
 		case float64:
 			_, err = strconv.ParseFloat(value, 64)
 		case string:
-			// No conversion needed
+			// No validation needed
 		default:
 			LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
-				LogType: "error",
-				Content: fmt.Sprintf("flag: %s, type: %T", flagName, actualValue),
+				LogType: LogTypeError,
+				Content: fmt.Sprintf("Unsupported flag type: %s (%T)", flagName, actualValue),
 			})
 			continue
 		}
-		// Check if type conversion would succeed
+
 		if err != nil {
 			LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
-				LogType: "error",
-				Content: fmt.Sprintf("flag: %s, type: %T, value: %s, error: %v", flagName, actualValue, value, err),
+				LogType: LogTypeError,
+				Content: fmt.Sprintf("Invalid value for flag %s (%T): %s - %v", flagName, actualValue, value, err),
 			})
 			continue
 		}
-		// Try to set new value
-		err = f.Value.Set(value)
-		if err != nil {
+
+		if err := f.Value.Set(value); err != nil {
 			LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
-				LogType: "error",
-				Content: fmt.Sprintf("Set config flag failed, flag: %s, before: %s, attempted_value: %s, error: %v", flagName, oldValue, value, err),
+				LogType: LogTypeError,
+				Content: fmt.Sprintf("Failed to set flag %s: %v (old: %s, new: %s)", flagName, err, oldValue, value),
 			})
 			continue
 		}
-		// Get value after change to confirm
-		newValue := f.Value.String()
+
 		LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
-			LogType: "info",
-			Content: fmt.Sprintf("Set config flag success, flag: %s, type: %T, before: %s, after: %s", flagName, actualValue, oldValue, newValue),
+			LogType: LogTypeInfo,
+			Content: fmt.Sprintf("Updated flag %s (%T): %s -> %s", flagName, actualValue, oldValue, f.Value.String()),
 		})
 	}
 }
@@ -340,7 +346,7 @@ func init() {
 	if len(*DefaultRegion) == 0 {
 		*DefaultRegion = util.GuessRegionByEndpoint(*LogServiceEndpoint, "cn-hangzhou")
 		LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
-			LogType: "info",
+			LogType: LogTypeInfo,
 			Content: fmt.Sprintf("guess region by endpoint, endpoint: %s, region: %s", *LogServiceEndpoint, *DefaultRegion),
 		})
 	}
