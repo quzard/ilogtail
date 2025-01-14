@@ -36,7 +36,7 @@ const (
 
 const (
 	DefaultGlobalConfig       = `{"InputIntervalMs":5000,"AggregatIntervalMs":30,"FlushIntervalMs":30,"DefaultLogQueueSize":11,"DefaultLogGroupQueueSize":12}`
-	DefaultPluginConfig       = `{"inputs":[{"type":"metric_mock","detail":{"Tags":{"tag1":"aaaa","tag2":"bbb"},"Fields":{"content":"xxxxx","time":"2017.09.12 20:55:36"}}}],"flushers":[{"type":"flusher_stdout"}]}`
+	DefaultPluginConfig       = `{"inputs":[{"type":"metric_mock","detail":{"Tags":{"tag1":"aaaa","tag2":"bbb"},"Fields":{"Content":"xxxxx","time":"2017.09.12 20:55:36"}}}],"flushers":[{"type":"flusher_stdout"}]}`
 	DefaultFlusherConfig      = `{"type":"flusher_sls","detail":{}}`
 	LOONGCOLLECTOR_ENV_PREFIX = "LOONG_"
 )
@@ -47,13 +47,13 @@ var (
 	flusherLoadOnce sync.Once
 )
 
-type logInfo struct {
-	logType string
-	content string
+type LogInfo struct {
+	LogType string
+	Content string
 }
 
 var (
-	LogsWaitToPrint = []logInfo{}
+	LogsWaitToPrint = []LogInfo{}
 )
 
 // flags used to control ilogtail.
@@ -122,7 +122,7 @@ var (
 	HTTPLoadFlag     = flag.Bool("http-load", false, "export http endpoint for load plugin config.")
 	FileIOFlag       = flag.Bool("file-io", false, "use file for input or output.")
 	InputFile        = flag.String("input-file", "./input.log", "input file")
-	InputField       = flag.String("input-field", "content", "input file")
+	InputField       = flag.String("input-field", "Content", "input file")
 	InputLineLimit   = flag.Int("input-line-limit", 1000, "input file")
 	OutputFile       = flag.String("output-file", "./output.log", "output file")
 	StatefulSetFlag  = flag.Bool("ALICLOUD_LOG_STATEFULSET_FLAG", false, "alibaba log export ports flag, set true if you want to use it")
@@ -256,9 +256,9 @@ func LoadEnvToFlags() {
 		// Try to determine flag type using type assertion
 		getter, ok := f.Value.(flag.Getter)
 		if !ok {
-			LogsWaitToPrint = append(LogsWaitToPrint, logInfo{
-				logType: "error",
-				content: fmt.Sprintf("Flag does not support Get operation, flag: %s, value: %s", flagName, oldValue),
+			LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
+				LogType: "error",
+				Content: fmt.Sprintf("Flag does not support Get operation, flag: %s, value: %s", flagName, oldValue),
 			})
 			continue
 		}
@@ -277,34 +277,34 @@ func LoadEnvToFlags() {
 		case string:
 			// No conversion needed
 		default:
-			LogsWaitToPrint = append(LogsWaitToPrint, logInfo{
-				logType: "error",
-				content: fmt.Sprintf("flag: %s, type: %T", flagName, actualValue),
+			LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
+				LogType: "error",
+				Content: fmt.Sprintf("flag: %s, type: %T", flagName, actualValue),
 			})
 			continue
 		}
 		// Check if type conversion would succeed
 		if err != nil {
-			LogsWaitToPrint = append(LogsWaitToPrint, logInfo{
-				logType: "error",
-				content: fmt.Sprintf("flag: %s, type: %T, value: %s, error: %v", flagName, actualValue, value, err),
+			LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
+				LogType: "error",
+				Content: fmt.Sprintf("flag: %s, type: %T, value: %s, error: %v", flagName, actualValue, value, err),
 			})
 			continue
 		}
 		// Try to set new value
 		err = f.Value.Set(value)
 		if err != nil {
-			LogsWaitToPrint = append(LogsWaitToPrint, logInfo{
-				logType: "error",
-				content: fmt.Sprintf("Set config flag failed, flag: %s, before: %s, attempted_value: %s, error: %v", flagName, oldValue, value, err),
+			LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
+				LogType: "error",
+				Content: fmt.Sprintf("Set config flag failed, flag: %s, before: %s, attempted_value: %s, error: %v", flagName, oldValue, value, err),
 			})
 			continue
 		}
 		// Get value after change to confirm
 		newValue := f.Value.String()
-		LogsWaitToPrint = append(LogsWaitToPrint, logInfo{
-			logType: "info",
-			content: fmt.Sprintf("Set config flag success, flag: %s, type: %T, before: %s, after: %s", flagName, actualValue, oldValue, newValue),
+		LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
+			LogType: "info",
+			Content: fmt.Sprintf("Set config flag success, flag: %s, type: %T, before: %s, after: %s", flagName, actualValue, oldValue, newValue),
 		})
 	}
 }
@@ -339,7 +339,10 @@ func init() {
 
 	if len(*DefaultRegion) == 0 {
 		*DefaultRegion = util.GuessRegionByEndpoint(*LogServiceEndpoint, "cn-hangzhou")
-		LogsWaitToPrint = append(LogsWaitToPrint, fmt.Sprintf("guess region by endpoint, endpoint: %s, region: %s", *LogServiceEndpoint, *DefaultRegion))
+		LogsWaitToPrint = append(LogsWaitToPrint, LogInfo{
+			LogType: "info",
+			Content: fmt.Sprintf("guess region by endpoint, endpoint: %s, region: %s", *LogServiceEndpoint, *DefaultRegion),
+		})
 	}
 
 	_ = util.InitFromEnvInt("ALICLOUD_LOG_ENV_CONFIG_UPDATE_INTERVAL", DockerEnvUpdateInterval, *DockerEnvUpdateInterval)

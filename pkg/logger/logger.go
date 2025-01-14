@@ -32,7 +32,6 @@ import (
 
 	"github.com/alibaba/ilogtail/pkg"
 	"github.com/alibaba/ilogtail/pkg/config"
-	"github.com/alibaba/ilogtail/pkg/flags"
 	"github.com/alibaba/ilogtail/pkg/util"
 
 	"github.com/cihub/seelog"
@@ -105,14 +104,6 @@ func InitLogger() {
 	once.Do(func() {
 		initNormalLogger()
 		catchStandardOutput()
-		for _, log := range flags.LogsWaitToPrint {
-			switch log.logType {
-			case "error":
-				Error(log.content)
-			case "info":
-				Info(log.content)
-			}
-		}
 	})
 }
 

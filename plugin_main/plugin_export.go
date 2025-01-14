@@ -116,6 +116,14 @@ func LoadGlobalConfig(jsonStr string) int {
 				retcode = 1
 			}
 			logger.InitLogger()
+			for _, log := range flags.LogsWaitToPrint {
+				switch log.LogType {
+				case "error":
+					logger.Error(context.Background(), log.Content)
+				case "info":
+					logger.Info(context.Background(), log.Content)
+				}
+			}
 			logger.Info(context.Background(), "load global config", jsonStr)
 			config.UserAgent = fmt.Sprintf("ilogtail/%v (%v) ip/%v", config.BaseVersion, runtime.GOOS, config.LoongcollectorGlobalConfig.HostIP)
 		}
