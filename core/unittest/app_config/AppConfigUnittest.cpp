@@ -172,7 +172,7 @@ void AppConfigUnittest::TestRecurseParseJsonToFlags() {
 }
 
 void AppConfigUnittest::TestParseEnvToFlags() {
-    // 忽略列表中的环境变量，继续用小写
+    // 忽略列表中的环境变量，继续可以用小写且允许 LOONG_ 前缀的格式
     {
         SetEnv("host_path_blacklist", "test1");
         AppConfig::GetInstance()->ParseEnvToFlags();
@@ -181,7 +181,7 @@ void AppConfigUnittest::TestParseEnvToFlags() {
 
         SetEnv("LOONG_host_path_blacklist", "test2");
         AppConfig::GetInstance()->ParseEnvToFlags();
-        APSARA_TEST_EQUAL(STRING_FLAG(host_path_blacklist), "test1");
+        APSARA_TEST_EQUAL(STRING_FLAG(host_path_blacklist), "test2");
     }
     // 不忽略列表中的环境变量，需要为大写,LOONG_ 前缀
     {
