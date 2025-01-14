@@ -162,9 +162,9 @@ DEFINE_FLAG_STRING(metrics_report_method,
                    "method to report metrics (default none, means logtail will not report metrics)",
                    "sls");
 
-DEFINE_FLAG_STRING(collector_operator_service, "loong collector operator service", "");
-DEFINE_FLAG_INT32(collector_operator_service_port, "loong collector operator service port", 8888);
-DEFINE_FLAG_INT32(collector_k8s_meta_service_port, "loong collector operator service port", 9000);
+DEFINE_FLAG_STRING(operator_service, "loong collector operator service", "");
+DEFINE_FLAG_INT32(operator_service_port, "loong collector operator service port", 8888);
+DEFINE_FLAG_INT32(k8s_meta_service_port, "loong collector operator service port", 9000);
 DEFINE_FLAG_STRING(_pod_name_, "agent pod name", "");
 
 DEFINE_FLAG_STRING(app_info_file, "", "app_info.json");
