@@ -123,7 +123,9 @@ DEFINE_FLAG_STRING(default_container_host_path, "", "/logtail_host");
 
 // dir
 DEFINE_FLAG_STRING(conf_dir, "loongcollector config dir", "conf");
+#ifdef __EXCLUDE_SPL__
 DEFINE_FLAG_STRING(log_dir, "loongcollector log dir", "log");
+#endif
 DEFINE_FLAG_STRING(data_dir, "loongcollector data dir", "data");
 DEFINE_FLAG_STRING(run_dir, "loongcollector run dir", "run");
 DEFINE_FLAG_STRING(third_party_dir, "loongcollector third party dir", "thirdparty");

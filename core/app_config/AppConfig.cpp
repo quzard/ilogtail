@@ -257,6 +257,9 @@ void CreateAgentDir() {
     }
 
     PROCESSDIRFLAG(conf_dir);
+    if (STRING_FLAG(log_dir).empty()) {
+        STRING_FLAG(log_dir) = "log";
+    }
     PROCESSDIRFLAG(log_dir);
     PROCESSDIRFLAG(data_dir);
     PROCESSDIRFLAG(run_dir);
