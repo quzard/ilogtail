@@ -177,6 +177,7 @@ void AppConfigUnittest::TestParseEnvToFlags() {
         SetEnv("host_path_blacklist", "test1");
         AppConfig::GetInstance()->ParseEnvToFlags();
         APSARA_TEST_EQUAL(STRING_FLAG(host_path_blacklist), "test1");
+        UnsetEnv("host_path_blacklist");
 
         SetEnv("LOONG_host_path_blacklist", "test2");
         AppConfig::GetInstance()->ParseEnvToFlags();
@@ -184,14 +185,15 @@ void AppConfigUnittest::TestParseEnvToFlags() {
     }
     // 不忽略列表中的环境变量，需要为大写,LOONG_ 前缀
     {
-        SetEnv("default_machine_cpu_usage_threshold", "123123");
+        SetEnv("default_machine_cpu_usage_threshold", "1");
         AppConfig::GetInstance()->ParseEnvToFlags();
-        APSARA_TEST_NOT_EQUAL(DOUBLE_FLAG(default_machine_cpu_usage_threshold), 123123);
+        APSARA_TEST_NOT_EQUAL(DOUBLE_FLAG(default_machine_cpu_usage_threshold), 1);
         APSARA_TEST_EQUAL(DOUBLE_FLAG(default_machine_cpu_usage_threshold), 0.4);
+        UnsetEnv("default_machine_cpu_usage_threshold");
 
-        SetEnv("LOONG_DEFAULT_MACHINE_CPU_USAGE_THRESHOLD", "123123");
+        SetEnv("LOONG_DEFAULT_MACHINE_CPU_USAGE_THRESHOLD", "2");
         AppConfig::GetInstance()->ParseEnvToFlags();
-        APSARA_TEST_EQUAL(DOUBLE_FLAG(default_machine_cpu_usage_threshold), 123123);
+        APSARA_TEST_EQUAL(DOUBLE_FLAG(default_machine_cpu_usage_threshold), 2);
     }
 }
 
