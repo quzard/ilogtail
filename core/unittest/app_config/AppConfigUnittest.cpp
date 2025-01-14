@@ -183,7 +183,7 @@ void AppConfigUnittest::TestParseEnvToFlags() {
     SetEnv("default_machine_cpu_usage_threshold", "123123");
     AppConfig::GetInstance()->ParseEnvToFlags();
     APSARA_TEST_NOT_EQUAL(DOUBLE_FLAG(default_machine_cpu_usage_threshold), 123123);
-    APSARA_TEST_NOT_EQUAL(DOUBLE_FLAG(default_machine_cpu_usage_threshold), 0.4);
+    APSARA_TEST_EQUAL(DOUBLE_FLAG(default_machine_cpu_usage_threshold), 0.4);
 
     SetEnv("LOONG_DEFAULT_MACHINE_CPU_USAGE_THRESHOLD", "123123");
     AppConfig::GetInstance()->ParseEnvToFlags();
