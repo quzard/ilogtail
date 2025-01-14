@@ -215,8 +215,8 @@ std::string AppConfig::sLocalConfigDir = "local";
 const std::string LOONGCOLLECTOR_ENV_PREFIX = "LOONG_";
 
 
-std::string GetLoongcollectorEnv(const std::string& flag_name) {
-    return LOONGCOLLECTOR_ENV_PREFIX + ToUpperCaseString(flag_name);
+std::string GetLoongcollectorEnv(const std::string& flagName) {
+    return LOONGCOLLECTOR_ENV_PREFIX + ToUpperCaseString(flagName);
 }
 
 void CreateAgentDir() {
@@ -235,7 +235,8 @@ void CreateAgentDir() {
     Json::Value emptyJson;
 #define PROCESSDIRFLAG(flag_name) \
     try { \
-        const char* value = getenv(GetLoongcollectorEnv(#flag_name).c_str()); \
+        const auto env_name = GetLoongcollectorEnv(#flag_name); \
+        const char* value = getenv(env_name.c_str()); \
         if (value != NULL) { \
             STRING_FLAG(flag_name) = StringTo<string>(value); \
         } \
