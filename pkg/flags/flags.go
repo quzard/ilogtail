@@ -18,7 +18,10 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/alibaba/ilogtail/pkg/logger"
@@ -32,15 +35,25 @@ const (
 )
 
 const (
-	DefaultGlobalConfig  = `{"InputIntervalMs":5000,"AggregatIntervalMs":30,"FlushIntervalMs":30,"DefaultLogQueueSize":11,"DefaultLogGroupQueueSize":12}`
-	DefaultPluginConfig  = `{"inputs":[{"type":"metric_mock","detail":{"Tags":{"tag1":"aaaa","tag2":"bbb"},"Fields":{"content":"xxxxx","time":"2017.09.12 20:55:36"}}}],"flushers":[{"type":"flusher_stdout"}]}`
-	DefaultFlusherConfig = `{"type":"flusher_sls","detail":{}}`
+	DefaultGlobalConfig       = `{"InputIntervalMs":5000,"AggregatIntervalMs":30,"FlushIntervalMs":30,"DefaultLogQueueSize":11,"DefaultLogGroupQueueSize":12}`
+	DefaultPluginConfig       = `{"inputs":[{"type":"metric_mock","detail":{"Tags":{"tag1":"aaaa","tag2":"bbb"},"Fields":{"content":"xxxxx","time":"2017.09.12 20:55:36"}}}],"flushers":[{"type":"flusher_stdout"}]}`
+	DefaultFlusherConfig      = `{"type":"flusher_sls","detail":{}}`
+	LOONGCOLLECTOR_ENV_PREFIX = "LOONG_"
 )
 
 var (
 	flusherType     string
 	flusherCfg      map[string]interface{}
 	flusherLoadOnce sync.Once
+)
+
+type logInfo struct {
+	logType string
+	content string
+}
+
+var (
+	LogsWaitToPrint = []logInfo{}
 )
 
 // flags used to control ilogtail.
@@ -120,7 +133,184 @@ var (
 	ClusterType          = flag.String("GLOBAL_CLUSTER_TYPE", "", "cluster type, supporting ack, one, asi and k8s")
 )
 
+// Helper function to lookup flags and handle common error case
+func lookupFlag(name string) (*flag.Flag, error) {
+	f := flag.Lookup(name)
+	if f == nil {
+		return nil, fmt.Errorf("flag %s not found", name)
+	}
+	return f, nil
+}
+
+// GetStringFlag returns the string value of the named flag.
+// Returns empty string and error if flag not found.
+func GetStringFlag(name string) (string, error) {
+	f, err := lookupFlag(name)
+	if err != nil {
+		return "", err
+	}
+	return f.Value.String(), nil
+}
+
+// GetBoolFlag returns the bool value of the named flag.
+// Returns false and error if flag not found or type mismatch.
+func GetBoolFlag(name string) (bool, error) {
+	f, err := lookupFlag(name)
+	if err != nil {
+		return false, err
+	}
+	if v, ok := f.Value.(flag.Getter); ok {
+		if b, ok := v.Get().(bool); ok {
+			return b, nil
+		}
+	}
+	return false, fmt.Errorf("flag %s is not bool type", name)
+}
+
+// GetIntFlag returns the int value of the named flag.
+// Returns 0 and error if flag not found or type mismatch.
+func GetIntFlag(name string) (int, error) {
+	f, err := lookupFlag(name)
+	if err != nil {
+		return 0, err
+	}
+	if v, ok := f.Value.(flag.Getter); ok {
+		if i, ok := v.Get().(int); ok {
+			return i, nil
+		}
+	}
+	return 0, fmt.Errorf("flag %s is not int type", name)
+}
+
+// GetFloat64Flag returns the float64 value of the named flag.
+// Returns 0.0 and error if flag not found or type mismatch.
+func GetFloat64Flag(name string) (float64, error) {
+	f, err := lookupFlag(name)
+	if err != nil {
+		return 0.0, err
+	}
+	if v, ok := f.Value.(flag.Getter); ok {
+		if f64, ok := v.Get().(float64); ok {
+			return f64, nil
+		}
+	}
+	return 0.0, fmt.Errorf("flag %s is not float64 type", name)
+}
+
+// SetStringFlag sets the string value of the named flag.
+func SetStringFlag(name string, value string) error {
+	f, err := lookupFlag(name)
+	if err != nil {
+		return err
+	}
+	return f.Value.Set(value)
+}
+
+// SetBoolFlag sets the bool value of the named flag.
+func SetBoolFlag(name string, value bool) error {
+	f, err := lookupFlag(name)
+	if err != nil {
+		return err
+	}
+	return f.Value.Set(strconv.FormatBool(value))
+}
+
+// SetIntFlag sets the int value of the named flag.
+func SetIntFlag(name string, value int) error {
+	f, err := lookupFlag(name)
+	if err != nil {
+		return err
+	}
+	return f.Value.Set(strconv.Itoa(value))
+}
+
+// SetFloat64Flag sets the float64 value of the named flag.
+func SetFloat64Flag(name string, value float64) error {
+	f, err := lookupFlag(name)
+	if err != nil {
+		return err
+	}
+	return f.Value.Set(strconv.FormatFloat(value, 'g', -1, 64))
+}
+
+func LoadEnvToFlags() {
+	// 获取到所有的env
+	envs := os.Environ()
+	for _, env := range envs {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		flagName := parts[0]
+		value := parts[1]
+		if !strings.HasPrefix(flagName, LOONGCOLLECTOR_ENV_PREFIX) {
+			continue
+		}
+		flagName = strings.ToLower(strings.TrimPrefix(flagName, LOONGCOLLECTOR_ENV_PREFIX))
+		f := flag.Lookup(flagName)
+		if f == nil {
+			continue
+		}
+		// Get current value and type before change
+		oldValue := f.Value.String()
+		// Try to determine flag type using type assertion
+		getter, ok := f.Value.(flag.Getter)
+		if !ok {
+			LogsWaitToPrint = append(LogsWaitToPrint, logInfo{
+				logType: "error",
+				content: fmt.Sprintf("Flag does not support Get operation, flag: %s, value: %s", flagName, oldValue),
+			})
+			continue
+		}
+		// Get actual value to determine type
+		actualValue := getter.Get()
+		var err error
+		switch actualValue.(type) {
+		case bool:
+			_, err = strconv.ParseBool(value)
+		case int, int64:
+			_, err = strconv.ParseInt(value, 10, 64)
+		case uint, uint64:
+			_, err = strconv.ParseUint(value, 10, 64)
+		case float64:
+			_, err = strconv.ParseFloat(value, 64)
+		case string:
+			// No conversion needed
+		default:
+			LogsWaitToPrint = append(LogsWaitToPrint, logInfo{
+				logType: "error",
+				content: fmt.Sprintf("flag: %s, type: %T", flagName, actualValue),
+			})
+			continue
+		}
+		// Check if type conversion would succeed
+		if err != nil {
+			LogsWaitToPrint = append(LogsWaitToPrint, logInfo{
+				logType: "error",
+				content: fmt.Sprintf("flag: %s, type: %T, value: %s, error: %v", flagName, actualValue, value, err),
+			})
+			continue
+		}
+		// Try to set new value
+		err = f.Value.Set(value)
+		if err != nil {
+			LogsWaitToPrint = append(LogsWaitToPrint, logInfo{
+				logType: "error",
+				content: fmt.Sprintf("Set config flag failed, flag: %s, before: %s, attempted_value: %s, error: %v", flagName, oldValue, value, err),
+			})
+			continue
+		}
+		// Get value after change to confirm
+		newValue := f.Value.String()
+		LogsWaitToPrint = append(LogsWaitToPrint, logInfo{
+			logType: "info",
+			content: fmt.Sprintf("Set config flag success, flag: %s, type: %T, before: %s, after: %s", flagName, actualValue, oldValue, newValue),
+		})
+	}
+}
+
 func init() {
+	LoadEnvToFlags()
 	_ = util.InitFromEnvBool("ALICLOUD_LOG_K8S_FLAG", K8sFlag, *K8sFlag)
 	_ = util.InitFromEnvBool("ALICLOUD_LOG_DOCKER_ENV_CONFIG", DockerConfigInitFlag, *DockerConfigInitFlag)
 	_ = util.InitFromEnvBool("ALICLOUD_LOG_ECS_FLAG", AliCloudECSFlag, *AliCloudECSFlag)
@@ -149,7 +339,7 @@ func init() {
 
 	if len(*DefaultRegion) == 0 {
 		*DefaultRegion = util.GuessRegionByEndpoint(*LogServiceEndpoint, "cn-hangzhou")
-		logger.Info(context.Background(), "guess region by endpoint, endpoint", *LogServiceEndpoint, "region", *DefaultRegion)
+		LogsWaitToPrint = append(LogsWaitToPrint, fmt.Sprintf("guess region by endpoint, endpoint: %s, region: %s", *LogServiceEndpoint, *DefaultRegion))
 	}
 
 	_ = util.InitFromEnvInt("ALICLOUD_LOG_ENV_CONFIG_UPDATE_INTERVAL", DockerEnvUpdateInterval, *DockerEnvUpdateInterval)

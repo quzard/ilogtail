@@ -1526,11 +1526,12 @@ void AppConfig::ParseEnvToFlags() {
         const std::string& value = iter.second;
         std::string key = iter.first;
         // Skip if key is not in ignore set and doesn't start with prefix
-        if (sIgnoreFlagSet.find(key) == sIgnoreFlagSet.end() && !StartWith(key, LOONGCOLLECTOR_ENV_PREFIX)) {
+        bool isIgnored = sIgnoreFlagSet.find(key) != sIgnoreFlagSet.end();
+        if (!isIgnored && !StartWith(key, LOONGCOLLECTOR_ENV_PREFIX)) {
             continue;
         }
         // Convert to lowercase if key has prefix
-        if (StartWith(key, LOONGCOLLECTOR_ENV_PREFIX)) {
+        if (!isIgnored && StartWith(key, LOONGCOLLECTOR_ENV_PREFIX)) {
             key = ToLowerCaseString(key.substr(LOONGCOLLECTOR_ENV_PREFIX.size()));
         }
         SetConfigFlag(key, value);
