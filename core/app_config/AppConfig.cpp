@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <iostream>
+#include <unordered_set>
 #include <utility>
 
 #include "boost/filesystem.hpp"
@@ -211,10 +212,11 @@ const uint32_t SLOW_FALL_BACK_FAIL_PERCENTAGE = 40;
 
 std::string AppConfig::sLocalConfigDir = "local";
 
+const std::string LOONGCOLLECTOR_ENV_PREFIX = "LOONG_";
+
 
 std::string GetLoongcollectorEnv(const std::string& flag_name) {
-    static const std::string sLoongcollectorEnvPrefix = "LOONG_";
-    return sLoongcollectorEnvPrefix + ToUpperCaseString(flag_name);
+    return LOONGCOLLECTOR_ENV_PREFIX + ToUpperCaseString(flag_name);
 }
 
 void CreateAgentDir() {
@@ -846,27 +848,6 @@ bool LoadSingleValueEnvConfig(const char* envKey, T& configValue, const T minVal
         LOG_WARNING(sLogger, (string("set ") + envKey + " from env failed, exception", e.what()));
     }
     return false;
-}
-
-/**
- * @brief 从环境变量加载配置值（如果存在）
- *
- * @tparam T 配置值的类型
- * @param envKey 环境变量的键
- * @param cfgValue 配置值的引用，如果环境变量存在，将被更新
- */
-template <typename T>
-void LoadEnvValueIfExisting(const char* envKey, T& cfgValue) {
-    try {
-        const char* value = getenv(envKey);
-        if (value != NULL) {
-            T val = StringTo<T>(value);
-            cfgValue = val;
-            LOG_INFO(sLogger, ("load config from env", envKey)("value", val));
-        }
-    } catch (const std::exception& e) {
-        LOG_WARNING(sLogger, ("load config from env error", envKey)("error", e.what()));
-    }
 }
 
 void AppConfig::LoadEnvResourceLimit() {
@@ -1511,9 +1492,43 @@ void AppConfig::ParseEnvToFlags() {
         }
     }
 #endif
+    std::unordered_set<std::string> sIgnoreFlagSet = {"buffer_file_path",
+                                                      "check_point_filename",
+                                                      "data_server_port",
+                                                      "host_path_blacklist",
+                                                      "process_thread_count",
+                                                      "send_request_concurrency",
+                                                      "check_point_dump_interval",
+                                                      "check_point_max_count",
+                                                      "enable_root_path_collection",
+                                                      "ilogtail_config",
+                                                      "ilogtail_discard_interval",
+                                                      "default_tail_limit_kb",
+                                                      "logreader_max_rotate_queue_size",
+                                                      "force_release_deleted_file_fd_timeout",
+                                                      "batch_send_interval",
+                                                      "ALIYUN_LOG_FILE_TAGS",
+                                                      "default_container_host_path",
+                                                      "default_max_inotify_watch_num",
+                                                      "enable_full_drain_mode",
+                                                      "ilogtail_discard_old_data",
+                                                      "timeout_interval",
+                                                      "enable_env_ref_in_config",
+                                                      "max_watch_dir_count",
+                                                      "polling_max_stat_count",
+                                                      "polling_max_stat_count_per_config",
+                                                      "polling_max_stat_count_per_dir"};
     for (const auto& iter : envMapping) {
-        const std::string& key = iter.first;
         const std::string& value = iter.second;
+        std::string key = iter.first;
+        // Skip if key is not in ignore set and doesn't start with prefix
+        if (sIgnoreFlagSet.find(key) == sIgnoreFlagSet.end() && !StartWith(key, LOONGCOLLECTOR_ENV_PREFIX)) {
+            continue;
+        }
+        // Convert to lowercase if key has prefix
+        if (StartWith(key, LOONGCOLLECTOR_ENV_PREFIX)) {
+            key = ToLowerCaseString(key.substr(LOONGCOLLECTOR_ENV_PREFIX.size()));
+        }
         SetConfigFlag(key, value);
         // 尝试解析为 double
         char* end;
