@@ -35,10 +35,10 @@ const (
 )
 
 const (
-	DefaultGlobalConfig       = `{"InputIntervalMs":5000,"AggregatIntervalMs":30,"FlushIntervalMs":30,"DefaultLogQueueSize":11,"DefaultLogGroupQueueSize":12}`
-	DefaultPluginConfig       = `{"inputs":[{"type":"metric_mock","detail":{"Tags":{"tag1":"aaaa","tag2":"bbb"},"Fields":{"Content":"xxxxx","time":"2017.09.12 20:55:36"}}}],"flushers":[{"type":"flusher_stdout"}]}`
-	DefaultFlusherConfig      = `{"type":"flusher_sls","detail":{}}`
-	LOONGCOLLECTOR_ENV_PREFIX = "LOONG_"
+	DefaultGlobalConfig     = `{"InputIntervalMs":5000,"AggregatIntervalMs":30,"FlushIntervalMs":30,"DefaultLogQueueSize":11,"DefaultLogGroupQueueSize":12}`
+	DefaultPluginConfig     = `{"inputs":[{"type":"metric_mock","detail":{"Tags":{"tag1":"aaaa","tag2":"bbb"},"Fields":{"Content":"xxxxx","time":"2017.09.12 20:55:36"}}}],"flushers":[{"type":"flusher_stdout"}]}`
+	DefaultFlusherConfig    = `{"type":"flusher_sls","detail":{}}`
+	LoongcollectorEnvPrefix = "LOONG_"
 )
 
 var (
@@ -243,10 +243,10 @@ func LoadEnvToFlags() {
 		}
 		flagName := parts[0]
 		value := parts[1]
-		if !strings.HasPrefix(flagName, LOONGCOLLECTOR_ENV_PREFIX) {
+		if !strings.HasPrefix(flagName, LoongcollectorEnvPrefix) {
 			continue
 		}
-		flagName = strings.ToLower(strings.TrimPrefix(flagName, LOONGCOLLECTOR_ENV_PREFIX))
+		flagName = strings.ToLower(strings.TrimPrefix(flagName, LoongcollectorEnvPrefix))
 		f := flag.Lookup(flagName)
 		if f == nil {
 			continue
