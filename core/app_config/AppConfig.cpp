@@ -214,7 +214,6 @@ std::string AppConfig::sLocalConfigDir = "local";
 
 const std::string LOONGCOLLECTOR_ENV_PREFIX = "LOONG_";
 
-
 std::string GetLoongcollectorEnv(const std::string& flagName) {
     return LOONGCOLLECTOR_ENV_PREFIX + ToUpperCaseString(flagName);
 }
@@ -258,10 +257,7 @@ void CreateAgentDir() {
     }
 
     PROCESSDIRFLAG(conf_dir);
-    if (STRING_FLAG(log_dir).empty()) {
-        STRING_FLAG(log_dir) = "log";
-    }
-    PROCESSDIRFLAG(log_dir);
+    PROCESSDIRFLAG(logs_dir);
     PROCESSDIRFLAG(data_dir);
     PROCESSDIRFLAG(run_dir);
     PROCESSDIRFLAG(third_party_dir);
@@ -291,7 +287,7 @@ std::string GetAgentLogDir() {
     if (BOOL_FLAG(logtail_mode)) {
         dir = GetProcessExecutionDir();
     } else {
-        dir = STRING_FLAG(log_dir) + PATH_SEPARATOR;
+        dir = STRING_FLAG(logs_dir) + PATH_SEPARATOR;
     }
 #endif
     return dir;
@@ -1449,7 +1445,7 @@ void AppConfig::InitEnvMapping(const std::string& envStr, std::map<std::string, 
     }
 }
 void AppConfig::SetConfigFlag(const std::string& flagName, const std::string& value) {
-    static set<string> sIgnoreFlagSet = {"conf_dir", "log_dir", "data_dir", "run_dir", "logtail_mode"};
+    static set<string> sIgnoreFlagSet = {"conf_dir", "logs_dir", "data_dir", "run_dir", "logtail_mode"};
     if (sIgnoreFlagSet.find(flagName) != sIgnoreFlagSet.end()) {
         return;
     }

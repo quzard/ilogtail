@@ -124,7 +124,7 @@ func LoadGlobalConfig(jsonStr string) int {
 					logger.Info(context.Background(), log.Content)
 				case flags.LogTypeDebug:
 					logger.Debug(context.Background(), log.Content)
-				case flags.LogTypeWarn:
+				case flags.LogTypeWarning:
 					logger.Warning(context.Background(), log.Content)
 				}
 			}

@@ -129,7 +129,7 @@ LoongCollector 提供以下参数用于自定义各类目录位置：
 
 - 配置目录: gflag为`conf_dir`、环境变量为`LOONG_CONF_DIR`
 
-- 日志目录: gflag为`log_dir`、环境变量为`LOONG_LOG_DIR`
+- 日志目录: gflag为`logs_dir`、环境变量为`LOONG_LOGS_DIR`
 
 - 数据目录: gflag为`data_dir`、环境变量为`LOONG_DATA_DIR`
 

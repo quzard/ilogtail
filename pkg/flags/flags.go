@@ -50,10 +50,10 @@ var (
 type LogType string
 
 const (
-	LogTypeInfo  LogType = "info"
-	LogTypeDebug LogType = "debug"
-	LogTypeWarn  LogType = "warn"
-	LogTypeError LogType = "error"
+	LogTypeInfo    LogType = "info"
+	LogTypeDebug   LogType = "debug"
+	LogTypeWarning LogType = "warning"
+	LogTypeError   LogType = "error"
 )
 
 // LogInfo contains metadata about a log message

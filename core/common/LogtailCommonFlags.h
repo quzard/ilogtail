@@ -54,7 +54,7 @@ DECLARE_FLAG_INT32(timeout_interval);
 DECLARE_FLAG_STRING(default_container_host_path);
 
 DECLARE_FLAG_STRING(conf_dir);
-DECLARE_FLAG_STRING(log_dir);
+DECLARE_FLAG_STRING(logs_dir);
 DECLARE_FLAG_STRING(data_dir);
 DECLARE_FLAG_STRING(run_dir);
 DECLARE_FLAG_STRING(third_party_dir);
