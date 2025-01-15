@@ -153,11 +153,11 @@ func lookupFlag(name string) (*flag.Flag, error) {
 
 // GetStringFlag returns the string value of the named flag
 func GetStringFlag(name string) (string, error) {
-	if f, err := lookupFlag(name); err != nil {
+	f, err := lookupFlag(name)
+	if err != nil {
 		return "", err
-	} else {
-		return f.Value.String(), nil
 	}
+	return f.Value.String(), nil
 }
 
 // GetBoolFlag returns the bool value of the named flag
