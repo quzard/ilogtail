@@ -316,7 +316,6 @@ func LoadEnvToFlags() {
 }
 
 func init() {
-	LoadEnvToFlags()
 	_ = util.InitFromEnvBool("ALICLOUD_LOG_K8S_FLAG", K8sFlag, *K8sFlag)
 	_ = util.InitFromEnvBool("ALICLOUD_LOG_DOCKER_ENV_CONFIG", DockerConfigInitFlag, *DockerConfigInitFlag)
 	_ = util.InitFromEnvBool("ALICLOUD_LOG_ECS_FLAG", AliCloudECSFlag, *AliCloudECSFlag)
@@ -356,6 +355,8 @@ func init() {
 	if *DockerConfigInitFlag && *DockerConfigPluginInitFlag {
 		_ = util.InitFromEnvBool("ALICLOUD_LOG_DOCKER_ENV_CONFIG_SELF", &SelfEnvConfigFlag, false)
 	}
+	// 最后执行，优先级最高
+	LoadEnvToFlags()
 }
 
 // GetFlusherConfiguration returns the flusher category and options.
