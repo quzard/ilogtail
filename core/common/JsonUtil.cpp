@@ -199,7 +199,7 @@ bool LoadEnvValueIfExisting(const char* envKey, T& cfgValue) {
         loaded = true; \
         APSARA_LOG_INFO(sLogger, ("load parameter from env", envName)("value", outVal)); \
     } \
-    if (envName != NULL) { \
+    if (name != NULL) { \
         const auto newEnvName = LOONGCOLLECTOR_ENV_PREFIX + ToUpperCaseString(name); \
         if (LoadEnvValueIfExisting(newEnvName.c_str(), outVal)) { \
             loaded = true; \
