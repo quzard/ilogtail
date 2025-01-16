@@ -117,6 +117,10 @@ func formatPath(path string) string {
 	if len(path) == 0 {
 		return path
 	}
+	// 处理开头的多个/
+	if strings.HasPrefix(path, "/") {
+		path = "/" + strings.TrimLeft(path, "/")
+	}
 	if path[len(path)-1] == '/' {
 		return path[0 : len(path)-1]
 	}
