@@ -203,10 +203,11 @@ void AppConfigUnittest::TestLoadSingleValueEnvConfig() {
     SetEnv("cpu_usage_limit", "0.5");
     AppConfig::GetInstance()->LoadEnvResourceLimit();
     APSARA_TEST_EQUAL(AppConfig::GetInstance()->GetCpuUsageUpLimit(), 0.5);
-
+    UnsetEnv("cpu_usage_limit");
     SetEnv("LOONG_CPU_USAGE_LIMIT", "0.6");
     AppConfig::GetInstance()->LoadEnvResourceLimit();
-    APSARA_TEST_EQUAL(AppConfig::GetInstance()->GetCpuUsageUpLimit(), 0.6);
+    APSARA_TEST_EQUAL(AppConfig::GetInstance()->GetCpuUsageUpLimit(), float(0.6));
+    UnsetEnv("LOONG_CPU_USAGE_LIMIT");
 }
 
 void AppConfigUnittest::TestLoadStringParameter() {
