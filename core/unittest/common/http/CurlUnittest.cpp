@@ -37,7 +37,7 @@ void CurlUnittest::TestSendHttpRequest() {
         = std::make_unique<HttpRequest>("GET", false, "httpstat.us", 80, "/404", "", map<string, string>(), "", 10, 3);
     bool success = SendHttpRequest(std::move(request), res);
     APSARA_TEST_TRUE(success);
-    APSARA_TEST_EQUAL(400, res.GetStatusCode());
+    APSARA_TEST_EQUAL(404, res.GetStatusCode());
 }
 
 void CurlUnittest::TestCurlTLS() {
@@ -70,7 +70,7 @@ void CurlUnittest::TestFollowRedirect() {
         "GET", false, "httpstat.us", 80, "/404", "", map<string, string>(), "", 10, 3, true);
     bool success = SendHttpRequest(std::move(request), res);
     APSARA_TEST_TRUE(success);
-    APSARA_TEST_EQUAL(400, res.GetStatusCode());
+    APSARA_TEST_EQUAL(404, res.GetStatusCode());
 }
 
 UNIT_TEST_CASE(CurlUnittest, TestSendHttpRequest)
