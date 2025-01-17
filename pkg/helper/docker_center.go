@@ -619,7 +619,10 @@ func (dc *DockerCenter) CreateInfoDetail(info types.ContainerJSON, envConfigPref
 	if len(ip) > 0 {
 		containerNameTag["_container_ip_"] = ip
 	}
-
+	for i := range info.Mounts {
+		info.Mounts[i].Source = filepath.Clean(info.Mounts[i].Source)
+		info.Mounts[i].Destination = filepath.Clean(info.Mounts[i].Destination)
+	}
 	did := &DockerInfoDetail{
 		StdoutPath:       info.LogPath,
 		ContainerInfo:    info,
@@ -627,10 +630,6 @@ func (dc *DockerCenter) CreateInfoDetail(info types.ContainerJSON, envConfigPref
 		K8SInfo:          &k8sInfo,
 		ContainerIP:      ip,
 		lastUpdateTime:   time.Now(),
-	}
-	for i := range info.Mounts {
-		info.Mounts[i].Source = filepath.Clean(info.Mounts[i].Source)
-		info.Mounts[i].Destination = filepath.Clean(info.Mounts[i].Destination)
 	}
 
 	// Find Env Log Configs
