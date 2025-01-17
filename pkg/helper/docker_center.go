@@ -628,9 +628,9 @@ func (dc *DockerCenter) CreateInfoDetail(info types.ContainerJSON, envConfigPref
 		ContainerIP:      ip,
 		lastUpdateTime:   time.Now(),
 	}
-	for _, mount := range info.Mounts {
-		mount.Source = filepath.Clean(mount.Source)
-		mount.Destination = filepath.Clean(mount.Destination)
+	for i := range info.Mounts {
+		info.Mounts[i].Source = filepath.Clean(info.Mounts[i].Source)
+		info.Mounts[i].Destination = filepath.Clean(info.Mounts[i].Destination)
 	}
 
 	// Find Env Log Configs
