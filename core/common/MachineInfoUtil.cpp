@@ -54,6 +54,7 @@ const std::string sOwnerAccountIdKey = "owner-account-id";
 const std::string sRegionIdKey = "region-id";
 const std::string sRandomHostIdKey = "random-hostid";
 const std::string sECSAssistMachineIdKey = "ecs-assist-machine-id";
+const std::string sCustomHostIdKey = "custom-hostid";
 
 
 #if defined(_MSC_VER)
@@ -551,6 +552,10 @@ void InstanceIdentity::DumpInstanceIdentity() {
         mInstanceIdentityJson.clear();
         mInstanceIdentityJson[sECSAssistMachineIdKey] = mSerialNumber;
         dumpInstanceIdentityToFile();
+    } else if (mEntity.getReadBuffer().GetHostIdType() == Hostid::Type::CUSTOM) {
+        mInstanceIdentityJson.clear();
+        mInstanceIdentityJson[sCustomHostIdKey] = mEntity.getReadBuffer().GetHostID().to_string();
+        dumpInstanceIdentityToFile();
     }
 }
 
@@ -589,9 +594,14 @@ bool InstanceIdentity::InitFromFile() {
                            && mInstanceIdentityJson[sECSAssistMachineIdKey].isString()) {
                     // 存在 ecs-assist-machine-id，则认为instanceIdentity是ready的
                     initSuccess = true;
+                } else if (mInstanceIdentityJson.isMember(sCustomHostIdKey)
+                           && mInstanceIdentityJson[sCustomHostIdKey].isString()) {
+                    // 存在 custom-hostid，则认为instanceIdentity是ready的
+                    initSuccess = true;
                 } else {
                     LOG_ERROR(sLogger,
-                              ("instanceIdentity is ready, but no random-hostid and ecs meta found, file",
+                              ("instanceIdentity is ready, but no ecs meta, random-hostid, ecs-assist-machine-id or "
+                               "custom-hostid found, file",
                                mInstanceIdentityFile)("instanceIdentity", instanceIdentityStr));
                 }
             }
