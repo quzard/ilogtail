@@ -554,7 +554,7 @@ void InstanceIdentity::DumpInstanceIdentity() {
         dumpInstanceIdentityToFile();
     } else if (mEntity.getReadBuffer().GetHostIdType() == Hostid::Type::CUSTOM) {
         mInstanceIdentityJson.clear();
-        mInstanceIdentityJson[sCustomHostIdKey] = mEntity.getReadBuffer().GetHostID().to_string();
+        mInstanceIdentityJson[sCustomHostIdKey] = STRING_FLAG(agent_host_id);
         dumpInstanceIdentityToFile();
     }
 }
