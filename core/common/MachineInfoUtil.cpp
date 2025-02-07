@@ -617,6 +617,7 @@ bool InstanceIdentity::InitFromFile() {
     }
     updateHostId(meta);
     mEntity.swap();
+    DumpInstanceIdentity();
     return initSuccess;
 }
 
@@ -636,13 +637,22 @@ bool InstanceIdentity::UpdateInstanceIdentity(const ECSMeta& meta) {
 
 void InstanceIdentity::dumpInstanceIdentityToFile() {
     std::string errMsg;
-    if (!WriteFile(mInstanceIdentityFile, mInstanceIdentityJson.toStyledString(), errMsg)) {
-        LOG_ERROR(sLogger, ("failed to write instanceIdentity to file", mInstanceIdentityFile)("error", errMsg));
-    } else {
-        LOG_INFO(sLogger,
-                 ("write instanceIdentity to file success, fileName",
-                  mInstanceIdentityFile)("instanceIdentity", mInstanceIdentityJson.toStyledString()));
+    std::string tmpFile = mInstanceIdentityFile + ".tmp";
+    if (!WriteFile(tmpFile, mInstanceIdentityJson.toStyledString(), errMsg)) {
+        LOG_ERROR(sLogger, ("failed to write instanceIdentity to tmp file", tmpFile)("error", errMsg));
+        return;
     }
+
+    if (rename(tmpFile.c_str(), mInstanceIdentityFile.c_str()) != 0) {
+        errMsg = std::strerror(errno);
+        LOG_ERROR(sLogger,
+                  ("failed to rename tmp file to target", tmpFile)("target", mInstanceIdentityFile)("error", errMsg));
+        return;
+    }
+
+    LOG_INFO(sLogger,
+             ("write instanceIdentity to file success, fileName",
+              mInstanceIdentityFile)("instanceIdentity", mInstanceIdentityJson.toStyledString()));
 }
 
 void InstanceIdentity::updateHostId(const ECSMeta& meta) {
