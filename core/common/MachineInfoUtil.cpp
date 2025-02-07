@@ -617,7 +617,6 @@ bool InstanceIdentity::InitFromFile() {
     }
     updateHostId(meta);
     mEntity.swap();
-    DumpInstanceIdentity();
     return initSuccess;
 }
 
