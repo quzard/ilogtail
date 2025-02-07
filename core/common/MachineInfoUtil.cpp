@@ -641,7 +641,11 @@ void InstanceIdentity::dumpInstanceIdentityToFile() {
         LOG_ERROR(sLogger, ("failed to write instanceIdentity to tmp file", tmpFile)("error", errMsg));
         return;
     }
-
+#if defined(_MSC_VER)
+    // The rename on Windows will fail if the destination is existing.
+    remove(mInstanceIdentityFile.c_str());
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+#endif
     if (rename(tmpFile.c_str(), mInstanceIdentityFile.c_str()) != 0) {
         errMsg = std::strerror(errno);
         LOG_ERROR(sLogger,
