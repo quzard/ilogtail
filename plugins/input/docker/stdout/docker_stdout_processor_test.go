@@ -246,7 +246,7 @@ func (s *inputProcessorTestSuite) TestStreamAllowed(c *check.C) {
 			s.collector.Logs = s.collector.Logs[:0]
 			s.context.InitContext("project", "logstore", "config")
 
-			splitedlogNoNewLine := `2021-07-13T16:32:21.212861448Z stdout F 123456`
+			splitedlogNoNewLine := `2018-05-16T06:28:41.2195434Z stdout F 123456`
 			processor := NewDockerStdoutProcessor(nil, time.Second, 0, 512*1024, stdoutAllowed, stderrAllowed, &s.context, &s.collector, s.tag, s.source)
 			splitedlogNoNewLineBytes := []byte(splitedlogNoNewLine)
 			processor.Process(splitedlogNoNewLineBytes, time.Duration(0))
@@ -266,7 +266,7 @@ func (s *inputProcessorTestSuite) TestStreamAllowed(c *check.C) {
 			s.collector.Logs = s.collector.Logs[:0]
 			s.context.InitContext("project", "logstore", "config")
 
-			splitedlogNoNewLine := `2021-07-13T16:32:21.212861448Z stderr F 123456`
+			splitedlogNoNewLine := `2018-05-16T06:28:41.2195434Z stderr F 123456`
 			processor := NewDockerStdoutProcessor(nil, time.Second, 0, 512*1024, stdoutAllowed, stderrAllowed, &s.context, &s.collector, s.tag, s.source)
 			splitedlogNoNewLineBytes := []byte(splitedlogNoNewLine)
 			processor.Process(splitedlogNoNewLineBytes, time.Duration(0))
