@@ -274,8 +274,7 @@ func (p *DockerStdoutProcessor) Process(fileBlock []byte, noChangeInterval time.
 	if nowIndex == 0 && len(fileBlock) > 0 {
 		thisLog := p.ParseContainerLogLine(fileBlock)
 		if p.StreamAllowed(thisLog) {
-			l := &LogMessage{Time: "_time_", StreamType: "_source_", Content: fileBlock}
-			p.collector.AddRawLogWithContext(p.newRawLogBySingleLine(l), map[string]interface{}{"source": p.source})
+			p.collector.AddRawLogWithContext(p.newRawLogBySingleLine(thisLog), map[string]interface{}{"source": p.source})
 			processedCount = len(fileBlock)
 		}
 	}
