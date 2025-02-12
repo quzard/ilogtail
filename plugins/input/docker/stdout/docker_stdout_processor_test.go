@@ -203,21 +203,40 @@ func (s *inputProcessorTestSuite) TestNormal(c *check.C) {
 }
 
 func (s *inputProcessorTestSuite) TestStreamAllowed(c *check.C) {
-	splitedlogNoNewLine := `{"log":"123456","stream":"stdout", "time":"2018-05-16T06:28:41.2195434Z"}`
+	stdoutAllowed := true
+	stderrAllowed := false
+	// stdout
+	{
+		s.collector.Logs = s.collector.Logs[:0]
+		s.context.InitContext("project", "logstore", "config")
 
-	processor := NewDockerStdoutProcessor(nil, time.Second, 0, 512*1024, true, true, &s.context, &s.collector, s.tag, s.source)
-	splitedlogNoNewLineBytes := []byte(splitedlogNoNewLine)
-	processor.Process(splitedlogNoNewLineBytes, time.Duration(0))
+		splitedlogNoNewLine := `{"log":"123456","stream":"stdout", "time":"2018-05-16T06:28:41.2195434Z"}`
+		processor := NewDockerStdoutProcessor(nil, time.Second, 0, 512*1024, stdoutAllowed, stderrAllowed, &s.context, &s.collector, s.tag, s.source)
+		splitedlogNoNewLineBytes := []byte(splitedlogNoNewLine)
+		processor.Process(splitedlogNoNewLineBytes, time.Duration(0))
 
-	c.Assert(len(s.collector.Logs), check.Equals, 1)
+		c.Assert(len(s.collector.Logs), check.Equals, 1)
 
-	c.Assert(s.collector.Logs[0].Contents[0].GetKey(), check.Equals, "content")
-	c.Assert(s.collector.Logs[0].Contents[1].GetKey(), check.Equals, "_time_")
-	c.Assert(s.collector.Logs[0].Contents[2].GetKey(), check.Equals, "_source_")
+		c.Assert(s.collector.Logs[0].Contents[0].GetKey(), check.Equals, "content")
+		c.Assert(s.collector.Logs[0].Contents[1].GetKey(), check.Equals, "_time_")
+		c.Assert(s.collector.Logs[0].Contents[2].GetKey(), check.Equals, "_source_")
 
-	c.Assert(s.collector.Logs[0].Contents[0].GetValue(), check.Equals, "123456")
-	c.Assert(s.collector.Logs[0].Contents[1].GetValue(), check.Equals, "2018-05-16T06:28:41.2195434Z")
-	c.Assert(s.collector.Logs[0].Contents[2].GetValue(), check.Equals, "stdout")
+		c.Assert(s.collector.Logs[0].Contents[0].GetValue(), check.Equals, "123456")
+		c.Assert(s.collector.Logs[0].Contents[1].GetValue(), check.Equals, "2018-05-16T06:28:41.2195434Z")
+		c.Assert(s.collector.Logs[0].Contents[2].GetValue(), check.Equals, "stdout")
+	}
+	// stderr
+	{
+		s.collector.Logs = s.collector.Logs[:0]
+		s.context.InitContext("project", "logstore", "config")
+
+		splitedlogNoNewLine := `{"log":"123456","stream":"stderr", "time":"2018-05-16T06:28:41.2195434Z"}`
+		processor := NewDockerStdoutProcessor(nil, time.Second, 0, 512*1024, stdoutAllowed, stderrAllowed, &s.context, &s.collector, s.tag, s.source)
+		splitedlogNoNewLineBytes := []byte(splitedlogNoNewLine)
+		processor.Process(splitedlogNoNewLineBytes, time.Duration(0))
+		fmt.Println(s.collector.Logs)
+		c.Assert(len(s.collector.Logs), check.Equals, 0)
+	}
 }
 
 func (s *inputProcessorTestSuite) TestSplitedLine(c *check.C) {
