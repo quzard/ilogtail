@@ -203,39 +203,21 @@ func (s *inputProcessorTestSuite) TestNormal(c *check.C) {
 }
 
 func (s *inputProcessorTestSuite) TestStreamAllowed(c *check.C) {
+	splitedlogNoNewLine := `{"log":"123456","stream":"stdout", "time":"2018-05-16T06:28:41.2195434Z"}`
+
 	processor := NewDockerStdoutProcessor(nil, time.Second, 0, 512*1024, true, true, &s.context, &s.collector, s.tag, s.source)
-	splitedlog1Bytes := []byte(splitedlog1)
-	str1 := util.ZeroCopyBytesToString(splitedlog1Bytes)
-	splited2og1Bytes := []byte(splitedlog2)
-	str2 := util.ZeroCopyBytesToString(splited2og1Bytes)
-	splited3og1Bytes := []byte(splitedlog3)
-	str3 := util.ZeroCopyBytesToString(splited3og1Bytes)
-
-	n1 := processor.Process(splitedlog1Bytes, time.Duration(0))
-	c.Assert(util.IsSafeString(str1, util.ZeroCopyBytesToString(processor.lastLogs[0].Content)), check.IsTrue)
-	c.Assert(n1, check.Equals, len(splitedlog1))
-
-	n2 := processor.Process(splited2og1Bytes, time.Duration(0))
-	c.Assert(util.IsSafeString(str2, util.ZeroCopyBytesToString(processor.lastLogs[1].Content)), check.IsTrue)
-	c.Assert(n2, check.Equals, len(splitedlog2))
-
-	n3 := processor.Process(splited3og1Bytes, time.Duration(0))
-	c.Assert(n3, check.Equals, len(splitedlog3))
+	splitedlogNoNewLineBytes := []byte(splitedlogNoNewLine)
+	processor.Process(splitedlogNoNewLineBytes, time.Duration(0))
 
 	c.Assert(len(s.collector.Logs), check.Equals, 1)
-	value := s.collector.Logs[0].Contents[0].GetValue()
-	c.Assert(len(value), check.Equals, 1+2+3)
-	c.Assert(value, check.Equals, "122333")
-	c.Assert(util.IsSafeString(str1, value), check.IsTrue)
-	c.Assert(util.IsSafeString(str2, value), check.IsTrue)
-	c.Assert(util.IsSafeString(str3, value), check.IsTrue)
 
-	nTimeout := processor.Process(splitedlog1Bytes, time.Minute)
-	c.Assert(nTimeout, check.Equals, len(splitedlog1))
-	c.Assert(len(s.collector.Logs), check.Equals, 2)
-	value = s.collector.Logs[1].Contents[0].GetValue()
-	c.Assert(value, check.Equals, "1")
-	c.Assert(util.IsSafeString(str1, value), check.IsTrue)
+	c.Assert(s.collector.Logs[0].Contents[0].GetKey(), check.Equals, "content")
+	c.Assert(s.collector.Logs[0].Contents[1].GetKey(), check.Equals, "_time_")
+	c.Assert(s.collector.Logs[0].Contents[2].GetKey(), check.Equals, "_source_")
+
+	c.Assert(s.collector.Logs[0].Contents[0].GetValue(), check.Equals, "123456")
+	c.Assert(s.collector.Logs[0].Contents[1].GetValue(), check.Equals, "2018-05-16T06:28:41.2195434Z")
+	c.Assert(s.collector.Logs[0].Contents[2].GetValue(), check.Equals, "stdout")
 }
 
 func (s *inputProcessorTestSuite) TestSplitedLine(c *check.C) {
