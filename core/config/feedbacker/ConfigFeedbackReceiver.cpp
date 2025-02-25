@@ -69,7 +69,6 @@ void ConfigFeedbackReceiver::FeedbackContinuousPipelineConfigStatus(const std::s
             feedbackable = iter->second;
         }
     }
-
     if (feedbackable) {
         feedbackable->FeedbackContinuousPipelineConfigStatus(name, status);
     }
@@ -84,7 +83,6 @@ void ConfigFeedbackReceiver::FeedbackInstanceConfigStatus(const std::string& nam
             feedbackable = iter->second;
         }
     }
-
     if (feedbackable) {
         feedbackable->FeedbackInstanceConfigStatus(name, status);
     }
@@ -101,7 +99,6 @@ void ConfigFeedbackReceiver::FeedbackOnetimePipelineConfigStatus(const std::stri
             feedbackable = iter->second;
         }
     }
-
     if (feedbackable) {
         feedbackable->FeedbackOnetimePipelineConfigStatus(type, name, status);
     }
