@@ -420,6 +420,7 @@ void CommonConfigProvider::UpdateRemotePipelineConfig(
                       "dir", sourceDir.string())("error code", ec.value())("error msg", ec.message()));
         return;
     }
+    // 保证每次往磁盘上dump文件的时候，config watcher不会读到一半的内容，相当于是个目录锁
     lock_guard<mutex> lock(mContinuousPipelineMux);
     for (const auto& config : configs) {
         filesystem::path filePath = sourceDir / (config.name() + ".json");
@@ -465,6 +466,7 @@ void CommonConfigProvider::UpdateRemoteInstanceConfig(
                       "dir", sourceDir.string())("error code", ec.value())("error msg", ec.message()));
         return;
     }
+    // 保证每次往磁盘上dump文件的时候，config watcher不会读到一半的内容，相当于是个目录锁
     lock_guard<mutex> lock(mInstanceMux);
     for (const auto& config : configs) {
         filesystem::path filePath = sourceDir / (config.name() + ".json");
