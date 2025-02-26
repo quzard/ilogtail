@@ -147,7 +147,7 @@ void CommonConfigProvider::LoadConfigFile() {
             info.status = ConfigFeedbackStatus::APPLYING;
             info.detail = detail.toStyledString();
             {
-                lock_guard<mutex> lockPipeline(mContinuousPipelineMux);
+                lock_guard<mutex> lockInfoMap(mInfoMapMux);
                 mContinuousPipelineConfigInfoMap[info.name] = info;
             }
             ConfigFeedbackReceiver::GetInstance().RegisterContinuousPipelineConfig(info.name, this);
@@ -165,7 +165,7 @@ void CommonConfigProvider::LoadConfigFile() {
             info.status = ConfigFeedbackStatus::APPLYING;
             info.detail = detail.toStyledString();
             {
-                lock_guard<mutex> lockInstance(mInstanceMux);
+                lock_guard<mutex> lockInfoMap(mInfoMapMux);
                 mInstanceConfigInfoMap[info.name] = info;
             }
             ConfigFeedbackReceiver::GetInstance().RegisterInstanceConfig(info.name, this);
@@ -286,21 +286,21 @@ configserver::proto::v2::HeartbeatRequest CommonConfigProvider::PrepareHeartbeat
     heartbeatReq.set_startup_time(mStartTime);
 
     {
-        lock_guard<mutex> pipelineinfomaplock(mContinuousPipelineMux);
+        lock_guard<mutex> lockInfoMap(mInfoMapMux);
         for (const auto& configInfo : mContinuousPipelineConfigInfoMap) {
             addConfigInfoToRequest(configInfo, heartbeatReq.add_continuous_pipeline_configs());
         }
     }
 
     {
-        lock_guard<mutex> instanceinfomaplock(mInstanceMux);
+        lock_guard<mutex> lockInfoMap(mInfoMapMux);
         for (const auto& configInfo : mInstanceConfigInfoMap) {
             addConfigInfoToRequest(configInfo, heartbeatReq.add_instance_configs());
         }
     }
 
     {
-        lock_guard<mutex> onetimeinfomaplock(mOnetimePipelineMux);
+        lock_guard<mutex> lockInfoMap(mInfoMapMux);
         for (const auto& configInfo : mOnetimePipelineConfigInfoMap) {
             addConfigInfoToRequest(configInfo, heartbeatReq.add_onetime_pipeline_configs());
         }
@@ -420,12 +420,12 @@ void CommonConfigProvider::UpdateRemotePipelineConfig(
                       "dir", sourceDir.string())("error code", ec.value())("error msg", ec.message()));
         return;
     }
-
+    lock_guard<mutex> lock(mContinuousPipelineMux);
     for (const auto& config : configs) {
         filesystem::path filePath = sourceDir / (config.name() + ".json");
         if (config.version() == -1) {
             {
-                lock_guard<mutex> lock(mContinuousPipelineMux);
+                lock_guard<mutex> lockInfoMap(mInfoMapMux);
                 mContinuousPipelineConfigInfoMap.erase(config.name());
             }
             filesystem::remove(filePath, ec);
@@ -433,7 +433,7 @@ void CommonConfigProvider::UpdateRemotePipelineConfig(
         } else {
             if (!DumpConfigFile(config, sourceDir)) {
                 {
-                    lock_guard<mutex> lock(mContinuousPipelineMux);
+                    lock_guard<mutex> lockInfoMap(mInfoMapMux);
                     mContinuousPipelineConfigInfoMap[config.name()] = ConfigInfo{.name = config.name(),
                                                                                  .version = config.version(),
                                                                                  .status = ConfigFeedbackStatus::FAILED,
@@ -442,7 +442,7 @@ void CommonConfigProvider::UpdateRemotePipelineConfig(
                 continue;
             }
             {
-                lock_guard<mutex> lock(mContinuousPipelineMux);
+                lock_guard<mutex> lockInfoMap(mInfoMapMux);
                 mContinuousPipelineConfigInfoMap[config.name()] = ConfigInfo{.name = config.name(),
                                                                              .version = config.version(),
                                                                              .status = ConfigFeedbackStatus::APPLYING,
@@ -465,12 +465,12 @@ void CommonConfigProvider::UpdateRemoteInstanceConfig(
                       "dir", sourceDir.string())("error code", ec.value())("error msg", ec.message()));
         return;
     }
-
+    lock_guard<mutex> lock(mInstanceMux);
     for (const auto& config : configs) {
         filesystem::path filePath = sourceDir / (config.name() + ".json");
         if (config.version() == -1) {
             {
-                lock_guard<mutex> lock(mInstanceMux);
+                lock_guard<mutex> lockInfoMap(mInfoMapMux);
                 mInstanceConfigInfoMap.erase(config.name());
             }
             filesystem::remove(filePath, ec);
@@ -478,7 +478,7 @@ void CommonConfigProvider::UpdateRemoteInstanceConfig(
         } else {
             if (!DumpConfigFile(config, sourceDir)) {
                 {
-                    lock_guard<mutex> lock(mInstanceMux);
+                    lock_guard<mutex> lockInfoMap(mInfoMapMux);
                     mInstanceConfigInfoMap[config.name()] = ConfigInfo{.name = config.name(),
                                                                        .version = config.version(),
                                                                        .status = ConfigFeedbackStatus::FAILED,
@@ -487,7 +487,7 @@ void CommonConfigProvider::UpdateRemoteInstanceConfig(
                 continue;
             }
             {
-                lock_guard<mutex> lock(mInstanceMux);
+                lock_guard<mutex> lockInfoMap(mInfoMapMux);
                 mInstanceConfigInfoMap[config.name()] = ConfigInfo{.name = config.name(),
                                                                    .version = config.version(),
                                                                    .status = ConfigFeedbackStatus::APPLYING,
@@ -554,7 +554,7 @@ bool CommonConfigProvider::FetchPipelineConfigFromServer(
 
 void CommonConfigProvider::FeedbackContinuousPipelineConfigStatus(const std::string& name,
                                                                   ConfigFeedbackStatus status) {
-    lock_guard<mutex> infomaplock(mContinuousPipelineMux);
+    lock_guard<mutex> lockInfoMap(mInfoMapMux);
     auto info = mContinuousPipelineConfigInfoMap.find(name);
     if (info != mContinuousPipelineConfigInfoMap.end()) {
         info->second.status = status;
@@ -564,7 +564,7 @@ void CommonConfigProvider::FeedbackContinuousPipelineConfigStatus(const std::str
                                                                                                ToStringView(status)));
 }
 void CommonConfigProvider::FeedbackInstanceConfigStatus(const std::string& name, ConfigFeedbackStatus status) {
-    lock_guard<mutex> infomaplock(mInstanceMux);
+    lock_guard<mutex> lockInfoMap(mInfoMapMux);
     auto info = mInstanceConfigInfoMap.find(name);
     if (info != mInstanceConfigInfoMap.end()) {
         info->second.status = status;
@@ -575,7 +575,7 @@ void CommonConfigProvider::FeedbackInstanceConfigStatus(const std::string& name,
 void CommonConfigProvider::FeedbackOnetimePipelineConfigStatus(const std::string& type,
                                                                const std::string& name,
                                                                ConfigFeedbackStatus status) {
-    lock_guard<mutex> infomaplock(mOnetimePipelineMux);
+    lock_guard<mutex> lockInfoMap(mInfoMapMux);
     auto info = mOnetimePipelineConfigInfoMap.find(GenerateOnetimePipelineConfigFeedBackKey(type, name));
     if (info != mOnetimePipelineConfigInfoMap.end()) {
         info->second.status = status;
