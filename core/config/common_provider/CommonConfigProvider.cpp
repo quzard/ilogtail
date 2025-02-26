@@ -290,17 +290,11 @@ configserver::proto::v2::HeartbeatRequest CommonConfigProvider::PrepareHeartbeat
         for (const auto& configInfo : mContinuousPipelineConfigInfoMap) {
             addConfigInfoToRequest(configInfo, heartbeatReq.add_continuous_pipeline_configs());
         }
-    }
 
-    {
-        lock_guard<mutex> lockInfoMap(mInfoMapMux);
         for (const auto& configInfo : mInstanceConfigInfoMap) {
             addConfigInfoToRequest(configInfo, heartbeatReq.add_instance_configs());
         }
-    }
 
-    {
-        lock_guard<mutex> lockInfoMap(mInfoMapMux);
         for (const auto& configInfo : mOnetimePipelineConfigInfoMap) {
             addConfigInfoToRequest(configInfo, heartbeatReq.add_onetime_pipeline_configs());
         }
@@ -433,13 +427,11 @@ void CommonConfigProvider::UpdateRemotePipelineConfig(
             ConfigFeedbackReceiver::GetInstance().UnregisterContinuousPipelineConfig(config.name());
         } else {
             if (!DumpConfigFile(config, sourceDir)) {
-                {
-                    lock_guard<mutex> lockInfoMap(mInfoMapMux);
-                    mContinuousPipelineConfigInfoMap[config.name()] = ConfigInfo{.name = config.name(),
-                                                                                 .version = config.version(),
-                                                                                 .status = ConfigFeedbackStatus::FAILED,
-                                                                                 .detail = config.detail()};
-                }
+                lock_guard<mutex> lockInfoMap(mInfoMapMux);
+                mContinuousPipelineConfigInfoMap[config.name()] = ConfigInfo{.name = config.name(),
+                                                                             .version = config.version(),
+                                                                             .status = ConfigFeedbackStatus::FAILED,
+                                                                             .detail = config.detail()};
                 continue;
             }
             {
@@ -479,13 +471,11 @@ void CommonConfigProvider::UpdateRemoteInstanceConfig(
             ConfigFeedbackReceiver::GetInstance().UnregisterInstanceConfig(config.name());
         } else {
             if (!DumpConfigFile(config, sourceDir)) {
-                {
-                    lock_guard<mutex> lockInfoMap(mInfoMapMux);
-                    mInstanceConfigInfoMap[config.name()] = ConfigInfo{.name = config.name(),
-                                                                       .version = config.version(),
-                                                                       .status = ConfigFeedbackStatus::FAILED,
-                                                                       .detail = config.detail()};
-                }
+                lock_guard<mutex> lockInfoMap(mInfoMapMux);
+                mInstanceConfigInfoMap[config.name()] = ConfigInfo{.name = config.name(),
+                                                                   .version = config.version(),
+                                                                   .status = ConfigFeedbackStatus::FAILED,
+                                                                   .detail = config.detail()};
                 continue;
             }
             {
